@@ -1,0 +1,135 @@
+# ============================================
+# GITIGNORE - KosTerpadu Monorepo
+# ============================================
+
+# ============================================
+# GENERAL
+# ============================================
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.temp
+.env
+.env.local
+.env.*.local
+.md
+
+# ============================================
+# NODE.JS (Backend & Web)
+# ============================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.pnpm-debug.log*
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# ============================================
+# BACKEND SPECIFIC
+# ============================================
+Web/kos-terpadu-backend/.env
+Web/kos-terpadu-backend/dist/
+Web/kos-terpadu-backend/node_modules/
+Web/kos-terpadu-backend/*.log
+
+# ============================================
+# WEB FRONTEND SPECIFIC
+# ============================================
+Web/kos-terpadu-admin/.env.local
+Web/kos-terpadu-admin/.next/
+Web/kos-terpadu-admin/out/
+Web/kos-terpadu-admin/node_modules/
+Web/kos-terpadu-admin/.vercel
+
+# ============================================
+# FLUTTER/MOBILE
+# ============================================
+Mobile/.dart_tool/
+Mobile/.flutter-plugins
+Mobile/.flutter-plugins-dependencies
+Mobile/.packages
+Mobile/.pub-cache/
+Mobile/.pub/
+Mobile/build/
+Mobile/flutter_*.png
+Mobile/flutter_export_environment.sh
+Mobile/pubspec.lock
+
+# Android
+Mobile/android/.gradle/
+Mobile/android/.idea/
+Mobile/android/local.properties
+Mobile/android/app/debug/
+Mobile/android/app/profile/
+Mobile/android/app/release/
+Mobile/android/captures/
+Mobile/android/gradlew
+Mobile/android/gradlew.bat
+Mobile/android/key.properties
+Mobile/android/*.jks
+Mobile/android/*.keystore
+
+# iOS
+Mobile/ios/Pods/
+Mobile/ios/.symlinks/
+Mobile/ios/Flutter/Flutter.framework
+Mobile/ios/Flutter/Flutter.podspec
+Mobile/ios/.generated/
+Mobile/ios/Runner.xcworkspace/
+Mobile/ios/Runner.xcodeproj/project.xcworkspace/
+Mobile/ios/Runner.xcodeproj/xcuserdata/
+
+# ============================================
+# FIREBASE
+# ============================================
+# Keep example files, ignore actual credentials
+**/google-services.json
+!**/google-services.json.example
+**/GoogleService-Info.plist
+!**/GoogleService-Info.plist.example
+**/.firebase/
+**/firebase-debug.log
+**/.firebaserc
+
+# ============================================
+# IDE & EDITORS
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# ============================================
+# TESTING
+# ============================================
+coverage/
+.nyc_output/
+*.lcov
+
+# ============================================
+# DEPLOYMENT
+# ============================================
+.vercel
+.netlify
+
+# ============================================
+# MISC
+# ============================================
+*.bak
+*.backup
+*.old
+.cache/
