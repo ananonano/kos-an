@@ -12,11 +12,11 @@ export interface LoginCredentials { email: string; password: string; }
 export interface LoginResponse { user: User; token: string; }
 export type RoomStatus = "available" | "occupied" | "maintenance";
 export interface Room {
-  id: string; roomNumber: string; price: number; status: RoomStatus;
+  id: string; roomNumber: string; type: string; price: number; status: RoomStatus;
   description?: string; facilities: string[]; images: string[];
   createdAt: string; updatedAt?: string;
 }
-export interface RoomFormData { roomNumber: string; price: number; status: RoomStatus; description?: string; facilities: string[]; }
+export interface RoomFormData { roomNumber: string; type: string; price: number; status: RoomStatus; description?: string; facilities: string[]; }
 export type TenantStatus = "active" | "inactive";
 export interface Tenant {
   id: string; userId: string; roomId: string; startDate: string;

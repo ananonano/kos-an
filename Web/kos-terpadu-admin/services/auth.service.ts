@@ -1,9 +1,17 @@
 ﻿import api from "@/lib/axios";
-import type { LoginCredentials, LoginResponse, ApiResponse } from "@/types";
+import type { LoginCredentials, ApiResponse, User } from "@/types";
+
+// Backend returns token and user directly, not wrapped in data
+interface LoginResponse {
+  success: boolean;
+  token: string;
+  user: User;
+  message?: string;
+}
 
 export const authService = {
-  login: async (credentials: LoginCredentials) => {
-    const res = await api.post<ApiResponse<LoginResponse>>("/auth/login", credentials);
+  login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
+    const res = await api.post<LoginResponse>("/auth/login", credentials);
     return res.data;
   },
   logout: async () => {
@@ -22,10 +30,8 @@ export const authService = {
     const res = await api.get("/auth/profile");
     return res.data;
   },
-  updateProfile: async (data: FormData) => {
-    const res = await api.put("/auth/profile", data, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+  updateProfile: async (data: { nama: string; email?: string; no_telepon?: string; foto?: string }) => {
+    const res = await api.put("/auth/profile", data);
     return res.data;
   },
   changePassword: async (data: { currentPassword: string; newPassword: string }) => {

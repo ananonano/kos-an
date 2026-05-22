@@ -14,27 +14,15 @@ export function useAuth() {
     setIsLoading(true);
     setError(null);
     try {
-      // Demo login - bypass API for development
-      if (credentials.email === "admin@kosterpadu.com" && credentials.password === "admin123") {
-        const demoUser = {
-          id: "admin-1",
-          name: "Admin KosTerpadu",
-          email: "admin@kosterpadu.com",
-          phone: "081234567890",
-          role: "admin" as const,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        setAuth(demoUser, "demo-token-12345");
-        router.push("/dashboard");
-        return;
-      }
       // Real API call
       const { authService } = await import("@/services/auth.service");
       const res = await authService.login(credentials);
-      if (res.success) {
-        setAuth(res.data.user, res.data.token);
+      if (res.success && res.token && res.user) {
+        // Backend returns { success, token, user } directly
+        setAuth(res.user, res.token);
         router.push("/dashboard");
+      } else {
+        setError("Login gagal. Response tidak valid.");
       }
     } catch (err: any) {
       setError(err.response?.data?.message || "Login gagal. Periksa email dan password.");

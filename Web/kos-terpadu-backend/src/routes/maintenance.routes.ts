@@ -1,11 +1,17 @@
 ﻿import { Router } from "express";
-import { getMaintenance, updateMaintenance, addProgress } from "../controllers/maintenance.controller";
+import { MaintenanceController } from "../controllers";
 import { authenticate, adminOnly } from "../middleware/auth.middleware";
-import { upload } from "../middleware/upload.middleware";
 
 const router = Router();
-router.use(authenticate, adminOnly);
-router.get("/", getMaintenance);
-router.put("/:id", updateMaintenance);
-router.post("/:id/progress", upload.single("image"), addProgress);
+
+router.get("/", authenticate, MaintenanceController.getAll);
+router.get("/urgent", authenticate, adminOnly, MaintenanceController.getUrgent);
+router.get("/statistics", authenticate, adminOnly, MaintenanceController.getStatistics);
+router.get("/by-category", authenticate, adminOnly, MaintenanceController.getByCategory);
+router.get("/:id", authenticate, MaintenanceController.getById);
+router.post("/", authenticate, MaintenanceController.create);
+router.put("/:id", authenticate, MaintenanceController.update);
+router.put("/:id/status", authenticate, adminOnly, MaintenanceController.updateStatus);
+router.delete("/:id", authenticate, adminOnly, MaintenanceController.delete);
+
 export default router;

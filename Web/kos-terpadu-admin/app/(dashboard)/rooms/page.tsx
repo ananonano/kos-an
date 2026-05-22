@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Plus, Pencil, Trash2, BedDouble, ImageIcon } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -14,15 +14,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { FACILITIES_OPTIONS } from "@/lib/constants";
-import { seedRooms } from "@/utils/seed-data";
 import { toast } from "@/components/ui/toaster";
 import type { Room, RoomStatus } from "@/types";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import api from "@/lib/axios";
 
 const schema = z.object({
   roomNumber: z.string().min(1, "Nomor kamar wajib diisi"),
+  type: z.string().min(1, "Tipe kamar wajib diisi"),
   price: z.coerce.number().min(1, "Harga wajib diisi"),
   status: z.enum(["available", "occupied", "maintenance"]),
   description: z.string().optional(),
@@ -31,13 +32,38 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function RoomsPage() {
-  const [rooms, setRooms] = useState<Room[]>(seedRooms);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<RoomStatus | "">("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editRoom, setEditRoom] = useState<Room | null>(null);
   const [deleteRoom, setDeleteRoom] = useState<Room | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
+
+  // Fetch rooms from backend
+  useEffect(() => {
+    fetchRooms();
+  }, []);
+
+  const fetchRooms = async () => {
+    try {
+      setIsFetching(true);
+      const response = await api.get("/rooms");
+      if (response.data.success) {
+        setRooms(response.data.data);
+      }
+    } catch (error: any) {
+      console.error("Fetch rooms error:", error);
+      toast({
+        title: "Gagal memuat data kamar",
+        description: error.response?.data?.message || "Terjadi kesalahan",
+        variant: "destructive"
+      });
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   const { register, handleSubmit, control, reset, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -55,33 +81,63 @@ export default function RoomsPage() {
   const openAdd = () => { setEditRoom(null); reset({ status: "available", facilities: [] }); setDialogOpen(true); };
   const openEdit = (room: Room) => {
     setEditRoom(room);
-    reset({ roomNumber: room.roomNumber, price: room.price, status: room.status, description: room.description, facilities: room.facilities });
+    reset({ roomNumber: room.roomNumber, type: room.type, price: room.price, status: room.status, description: room.description, facilities: room.facilities });
     setDialogOpen(true);
   };
 
   const onSubmit = async (data: FormData) => {
-    setIsLoading(true);
-    await new Promise(r => setTimeout(r, 800));
-    if (editRoom) {
-      setRooms(prev => prev.map(r => r.id === editRoom.id ? { ...r, ...data } : r));
-      toast({ title: "Kamar diperbarui", variant: "success" });
-    } else {
-      const newRoom: Room = { id: Date.now().toString(), ...data, images: [], createdAt: new Date().toISOString() };
-      setRooms(prev => [...prev, newRoom]);
-      toast({ title: "Kamar ditambahkan", variant: "success" });
+    try {
+      setIsLoading(true);
+
+      if (editRoom) {
+        // Update existing room
+        const response = await api.put(`/rooms/${editRoom.id}`, data);
+        if (response.data.success) {
+          toast({ title: "Kamar berhasil diperbarui", variant: "success" });
+          fetchRooms(); // Refresh data
+        }
+      } else {
+        // Create new room
+        const response = await api.post("/rooms", data);
+        if (response.data.success) {
+          toast({ title: "Kamar berhasil ditambahkan", variant: "success" });
+          fetchRooms(); // Refresh data
+        }
+      }
+
+      setDialogOpen(false);
+    } catch (error: any) {
+      console.error("Submit room error:", error);
+      toast({
+        title: editRoom ? "Gagal memperbarui kamar" : "Gagal menambahkan kamar",
+        description: error.response?.data?.message || "Terjadi kesalahan",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-    setDialogOpen(false);
   };
 
   const handleDelete = async () => {
     if (!deleteRoom) return;
-    setIsLoading(true);
-    await new Promise(r => setTimeout(r, 500));
-    setRooms(prev => prev.filter(r => r.id !== deleteRoom.id));
-    toast({ title: "Kamar dihapus", variant: "destructive" });
-    setIsLoading(false);
-    setDeleteRoom(null);
+    try {
+      setIsLoading(true);
+      const response = await api.delete(`/rooms/${deleteRoom.id}`);
+      if (response.data.success) {
+        toast({ title: "Kamar berhasil dihapus", variant: "destructive" });
+        fetchRooms(); // Refresh data
+      }
+      setDeleteRoom(null);
+    } catch (error: any) {
+      console.error("Delete room error:", error);
+      toast({
+        title: "Gagal menghapus kamar",
+        description: error.response?.data?.message || "Terjadi kesalahan",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleFacility = (f: string) => {
@@ -90,30 +146,36 @@ export default function RoomsPage() {
   };
 
   const columns = [
-    { key: "roomNumber", header: "No. Kamar", render: (r: Room) => (
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-          <BedDouble className="w-4 h-4 text-blue-600" />
+    {
+      key: "roomNumber", header: "No. Kamar", render: (r: Room) => (
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+            <BedDouble className="w-4 h-4 text-blue-600" />
+          </div>
+          <span className="font-semibold">Kamar {r.roomNumber}</span>
         </div>
-        <span className="font-semibold">Kamar {r.roomNumber}</span>
-      </div>
-    )},
+      )
+    },
     { key: "price", header: "Harga/Bulan", render: (r: Room) => <span className="font-medium">{formatCurrency(r.price)}</span> },
     { key: "status", header: "Status", render: (r: Room) => <RoomStatusBadge status={r.status} /> },
-    { key: "facilities", header: "Fasilitas", render: (r: Room) => (
-      <div className="flex flex-wrap gap-1 max-w-xs">
-        {r.facilities.slice(0, 3).map(f => (
-          <span key={f} className="text-xs bg-muted px-2 py-0.5 rounded-full">{f}</span>
-        ))}
-        {r.facilities.length > 3 && <span className="text-xs text-muted-foreground">+{r.facilities.length - 3}</span>}
-      </div>
-    )},
-    { key: "actions", header: "Aksi", render: (r: Room) => (
-      <div className="flex gap-2">
-        <Button variant="ghost" size="icon" onClick={() => openEdit(r)}><Pencil className="w-4 h-4" /></Button>
-        <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => setDeleteRoom(r)}><Trash2 className="w-4 h-4" /></Button>
-      </div>
-    )},
+    {
+      key: "facilities", header: "Fasilitas", render: (r: Room) => (
+        <div className="flex flex-wrap gap-1 max-w-xs">
+          {r.facilities.slice(0, 3).map(f => (
+            <span key={f} className="text-xs bg-muted px-2 py-0.5 rounded-full">{f}</span>
+          ))}
+          {r.facilities.length > 3 && <span className="text-xs text-muted-foreground">+{r.facilities.length - 3}</span>}
+        </div>
+      )
+    },
+    {
+      key: "actions", header: "Aksi", render: (r: Room) => (
+        <div className="flex gap-2">
+          <Button variant="ghost" size="icon" onClick={() => openEdit(r)}><Pencil className="w-4 h-4" /></Button>
+          <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => setDeleteRoom(r)}><Trash2 className="w-4 h-4" /></Button>
+        </div>
+      )
+    },
   ];
 
   return (
@@ -153,23 +215,28 @@ export default function RoomsPage() {
                 {errors.roomNumber && <p className="text-red-500 text-xs">{errors.roomNumber.message}</p>}
               </div>
               <div className="space-y-2">
+                <Label>Tipe Kamar</Label>
+                <Input {...register("type")} placeholder="Standard / Deluxe / VIP" />
+                {errors.type && <p className="text-red-500 text-xs">{errors.type.message}</p>}
+              </div>
+              <div className="space-y-2">
                 <Label>Harga/Bulan (Rp)</Label>
                 <Input {...register("price")} type="number" placeholder="1500000" />
                 {errors.price && <p className="text-red-500 text-xs">{errors.price.message}</p>}
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Controller name="status" control={control} render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="available">Tersedia</SelectItem>
-                    <SelectItem value="occupied">Terisi</SelectItem>
-                    <SelectItem value="maintenance">Perbaikan</SelectItem>
-                  </SelectContent>
-                </Select>
-              )} />
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Controller name="status" control={control} render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="available">Tersedia</SelectItem>
+                      <SelectItem value="occupied">Terisi</SelectItem>
+                      <SelectItem value="maintenance">Perbaikan</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )} />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Deskripsi</Label>

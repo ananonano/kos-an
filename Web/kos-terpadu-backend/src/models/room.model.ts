@@ -51,7 +51,19 @@ export class RoomModel {
 
         const room = result.rows[0];
         if (room.fasilitas) {
-            room.fasilitas = JSON.parse(room.fasilitas);
+            try {
+                if (typeof room.fasilitas === 'string') {
+                    room.fasilitas = JSON.parse(room.fasilitas);
+                }
+                if (!Array.isArray(room.fasilitas)) {
+                    room.fasilitas = [];
+                }
+            } catch (error) {
+                console.error('Error parsing fasilitas for room', room.id, error);
+                room.fasilitas = [];
+            }
+        } else {
+            room.fasilitas = [];
         }
 
         return room;
@@ -139,7 +151,21 @@ export class RoomModel {
         // Parse JSON fasilitas for each room
         const rooms = result.rows.map(room => {
             if (room.fasilitas) {
-                room.fasilitas = JSON.parse(room.fasilitas);
+                try {
+                    // If it's already an object/array (JSONB), keep it
+                    if (typeof room.fasilitas === 'string') {
+                        room.fasilitas = JSON.parse(room.fasilitas);
+                    }
+                    // Ensure it's an array
+                    if (!Array.isArray(room.fasilitas)) {
+                        room.fasilitas = [];
+                    }
+                } catch (error) {
+                    console.error('Error parsing fasilitas for room', room.id, error);
+                    room.fasilitas = [];
+                }
+            } else {
+                room.fasilitas = [];
             }
             return room;
         });

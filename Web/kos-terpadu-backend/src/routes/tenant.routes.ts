@@ -1,11 +1,14 @@
 ﻿import { Router } from "express";
-import { getTenants, createTenant, updateTenant, deleteTenant } from "../controllers/tenant.controller";
+import { TenantController } from "../controllers";
 import { authenticate, adminOnly } from "../middleware/auth.middleware";
 
 const router = Router();
-router.use(authenticate, adminOnly);
-router.get("/", getTenants);
-router.post("/", createTenant);
-router.put("/:id", updateTenant);
-router.delete("/:id", deleteTenant);
+
+router.get("/", authenticate, adminOnly, TenantController.getAll);
+router.get("/statistics", authenticate, adminOnly, TenantController.getStatistics);
+router.get("/:id", authenticate, adminOnly, TenantController.getById);
+router.post("/", authenticate, adminOnly, TenantController.create);
+router.put("/:id", authenticate, adminOnly, TenantController.update);
+router.delete("/:id", authenticate, adminOnly, TenantController.delete);
+
 export default router;

@@ -1,10 +1,13 @@
 ﻿import { Router } from "express";
-import { getStats, getMonthlyIncome, getRecentActivity } from "../controllers/dashboard.controller";
+import { DashboardController } from "../controllers";
 import { authenticate, adminOnly } from "../middleware/auth.middleware";
 
 const router = Router();
-router.use(authenticate, adminOnly);
-router.get("/stats", getStats);
-router.get("/monthly-income", getMonthlyIncome);
-router.get("/activity", getRecentActivity);
+
+router.get("/admin", authenticate, adminOnly, DashboardController.getAdminOverview);
+router.get("/tenant/:tenantId", authenticate, DashboardController.getTenantOverview);
+router.get("/financial", authenticate, adminOnly, DashboardController.getFinancialSummary);
+router.get("/activities", authenticate, adminOnly, DashboardController.getRecentActivities);
+router.get("/pending-tasks", authenticate, adminOnly, DashboardController.getPendingTasks);
+
 export default router;

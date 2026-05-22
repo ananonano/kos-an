@@ -1,88 +1,321 @@
-﻿import { Request, Response } from "express";
-import { query } from "../config/database";
-import { AuthRequest } from "../middleware/auth.middleware";
-import { db } from "../config/firebase";
+﻿import { Request, Response } from 'express';
+import { PaymentModel } from '../models';
 
-export const getPayments = async (req: Request, res: Response) => {
-  try {
-    const { page = 1, limit = 10, status = "" } = req.query;
-    const offset = (Number(page) - 1) * Number(limit);
-    let where = "WHERE 1=1";
-    const params: any[] = [];
-    let idx = 1;
-    if (status) { where += ` AND p.status = $${idx++}`; params.push(status); }
-    const countRes = await query(`SELECT COUNT(*) FROM payments p ${where}`, params);
-    const total = parseInt(countRes.rows[0].count);
-    params.push(Number(limit), offset);
-    const result = await query(`
-      SELECT p.*, b.month, b.year, b.amount as bill_amount, b.due_date,
-             u.name as tenant_name, r.room_number
-      FROM payments p
-      JOIN bills b ON p.bill_id = b.id
-      JOIN tenants t ON b.tenant_id = t.id
-      JOIN users u ON t.user_id = u.id
-      JOIN rooms r ON t.room_id = r.id
-      ${where} ORDER BY p.created_at DESC LIMIT $${idx} OFFSET $${idx+1}
-    `, params);
-    res.json({
-      success: true,
-      data: result.rows.map(r => ({
-        id: r.id, billId: r.bill_id, amount: parseFloat(r.amount),
-        proofImage: r.proof_image, status: r.status,
-        paymentDate: r.payment_date, createdAt: r.created_at,
-        bill: { month: r.month, year: r.year, amount: parseFloat(r.bill_amount), dueDate: r.due_date },
-        tenant: { name: r.tenant_name, roomNumber: r.room_number },
-      })),
-      pagination: { page: Number(page), limit: Number(limit), total, totalPages: Math.ceil(total / Number(limit)) },
-    });
-  } catch { res.status(500).json({ success: false, message: "Server error" }); }
-};
-
-export const verifyPayment = async (req: AuthRequest, res: Response) => {
-  try {
-    const result = await query(
-      "UPDATE payments SET status='verified' WHERE id=$1 AND status='pending' RETURNING *, bill_id",
-      [req.params.id]
-    );
-    if (!result.rows.length) return res.status(404).json({ success: false, message: "Pembayaran tidak ditemukan atau sudah diproses" });
-    // Update bill status
-    await query("UPDATE bills SET status='paid' WHERE id=$1", [result.rows[0].bill_id]);
-    // Firebase notification
+export class PaymentController {
+  /**
+   * Get all payments with pagination and filters
+   * Query params: page, limit, tenant_id, bill_id, status, search
+   */
+  static async getAll(req: Request, res: Response) {
     try {
-      const billRes = await query("SELECT t.user_id FROM bills b JOIN tenants t ON b.tenant_id=t.id WHERE b.id=$1", [result.rows[0].bill_id]);
-      if (billRes.rows.length) {
-        await db.collection("realtime_notifications").add({
-          userId: billRes.rows[0].user_id,
-          title: "Pembayaran Diverifikasi",
-          message: "Pembayaran Anda telah diverifikasi oleh admin.",
-          type: "payment", isRead: false,
-          createdAt: new Date(),
+      const { page, limit, tenant_id, bill_id, status, search } = req.query;
+
+      const result = await PaymentModel.findAll({
+        page: page ? parseInt(page as string) : 1,
+        limit: limit ? parseInt(limit as string) : 20,
+        tenant_id: tenant_id ? parseInt(tenant_id as string) : undefined,
+        bill_id: bill_id ? parseInt(bill_id as string) : undefined,
+        status: status as any,
+        search: search as string
+      });
+
+      return res.json({
+        success: true,
+        data: result.payments,
+        pagination: {
+          page: parseInt(page as string) || 1,
+          limit: parseInt(limit as string) || 20,
+          total: result.total,
+          totalPages: Math.ceil(result.total / (parseInt(limit as string) || 20))
+        }
+      });
+    } catch (error) {
+      console.error('GetAll payments error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Get payment by ID
+   * Returns single payment with tenant, bill, and room details
+   */
+  static async getById(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const payment = await PaymentModel.findById(parseInt(id));
+      if (!payment) {
+        return res.status(404).json({
+          success: false,
+          message: 'Pembayaran tidak ditemukan'
         });
       }
-    } catch {}
-    res.json({ success: true, message: "Pembayaran berhasil diverifikasi" });
-  } catch { res.status(500).json({ success: false, message: "Server error" }); }
-};
 
-export const rejectPayment = async (req: AuthRequest, res: Response) => {
-  try {
-    const { reason } = req.body;
-    const result = await query(
-      "UPDATE payments SET status='rejected', rejection_reason=$1 WHERE id=$2 AND status='pending' RETURNING *, bill_id",
-      [reason || "Bukti pembayaran tidak valid", req.params.id]
-    );
-    if (!result.rows.length) return res.status(404).json({ success: false, message: "Pembayaran tidak ditemukan" });
+      return res.json({
+        success: true,
+        data: payment
+      });
+    } catch (error) {
+      console.error('GetById payment error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Create new payment
+   * Tenant submits payment proof
+   */
+  static async create(req: Request, res: Response) {
     try {
-      const billRes = await query("SELECT t.user_id FROM bills b JOIN tenants t ON b.tenant_id=t.id WHERE b.id=$1", [result.rows[0].bill_id]);
-      if (billRes.rows.length) {
-        await db.collection("realtime_notifications").add({
-          userId: billRes.rows[0].user_id,
-          title: "Pembayaran Ditolak",
-          message: `Pembayaran Anda ditolak. Alasan: ${reason || "Bukti tidak valid"}`,
-          type: "payment", isRead: false, createdAt: new Date(),
+      const { bill_id, tenant_id, jumlah, tanggal_bayar, metode_pembayaran, bukti_pembayaran, keterangan } = req.body;
+
+      if (!bill_id || !tenant_id || !jumlah || !tanggal_bayar || !metode_pembayaran) {
+        return res.status(400).json({
+          success: false,
+          message: 'Bill ID, tenant ID, jumlah, tanggal bayar, dan metode pembayaran harus diisi'
         });
       }
-    } catch {}
-    res.json({ success: true, message: "Pembayaran ditolak" });
-  } catch { res.status(500).json({ success: false, message: "Server error" }); }
-};
+
+      const payment = await PaymentModel.create({
+        bill_id: parseInt(bill_id),
+        tenant_id: parseInt(tenant_id),
+        jumlah: parseFloat(jumlah),
+        tanggal_bayar: new Date(tanggal_bayar),
+        metode_pembayaran,
+        bukti_pembayaran,
+        keterangan
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: 'Pembayaran berhasil disubmit, menunggu verifikasi',
+        data: payment
+      });
+    } catch (error) {
+      console.error('Create payment error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Update payment by ID
+   * Tenant can update before verification
+   */
+  static async update(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { jumlah, tanggal_bayar, metode_pembayaran, bukti_pembayaran, keterangan } = req.body;
+
+      const existingPayment = await PaymentModel.findById(parseInt(id));
+      if (!existingPayment) {
+        return res.status(404).json({
+          success: false,
+          message: 'Pembayaran tidak ditemukan'
+        });
+      }
+
+      if (existingPayment.status !== 'menunggu_verifikasi') {
+        return res.status(400).json({
+          success: false,
+          message: 'Pembayaran sudah diverifikasi, tidak bisa diupdate'
+        });
+      }
+
+      const payment = await PaymentModel.update(parseInt(id), {
+        jumlah: jumlah ? parseFloat(jumlah) : undefined,
+        tanggal_bayar: tanggal_bayar ? new Date(tanggal_bayar) : undefined,
+        metode_pembayaran,
+        bukti_pembayaran,
+        keterangan
+      });
+
+      return res.json({
+        success: true,
+        message: 'Pembayaran berhasil diupdate',
+        data: payment
+      });
+    } catch (error) {
+      console.error('Update payment error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Delete payment by ID
+   * Admin only or tenant before verification
+   */
+  static async delete(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const payment = await PaymentModel.findById(parseInt(id));
+      if (!payment) {
+        return res.status(404).json({
+          success: false,
+          message: 'Pembayaran tidak ditemukan'
+        });
+      }
+
+      await PaymentModel.delete(parseInt(id));
+
+      return res.json({
+        success: true,
+        message: 'Pembayaran berhasil dihapus'
+      });
+    } catch (error) {
+      console.error('Delete payment error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Verify payment (approve)
+   * Admin only - updates payment and bill status to lunas
+   */
+  static async verify(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { keterangan } = req.body;
+      const verifiedBy = (req as any).user.id;
+
+      const existingPayment = await PaymentModel.findById(parseInt(id));
+      if (!existingPayment) {
+        return res.status(404).json({
+          success: false,
+          message: 'Pembayaran tidak ditemukan'
+        });
+      }
+
+      if (existingPayment.status !== 'menunggu_verifikasi') {
+        return res.status(400).json({
+          success: false,
+          message: 'Pembayaran sudah diverifikasi sebelumnya'
+        });
+      }
+
+      const payment = await PaymentModel.verify(parseInt(id), verifiedBy, keterangan);
+
+      return res.json({
+        success: true,
+        message: 'Pembayaran berhasil diverifikasi',
+        data: payment
+      });
+    } catch (error) {
+      console.error('Verify payment error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Reject payment
+   * Admin only - rejects payment with reason
+   */
+  static async reject(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { keterangan } = req.body;
+      const verifiedBy = (req as any).user.id;
+
+      if (!keterangan) {
+        return res.status(400).json({
+          success: false,
+          message: 'Keterangan penolakan harus diisi'
+        });
+      }
+
+      const existingPayment = await PaymentModel.findById(parseInt(id));
+      if (!existingPayment) {
+        return res.status(404).json({
+          success: false,
+          message: 'Pembayaran tidak ditemukan'
+        });
+      }
+
+      if (existingPayment.status !== 'menunggu_verifikasi') {
+        return res.status(400).json({
+          success: false,
+          message: 'Pembayaran sudah diverifikasi sebelumnya'
+        });
+      }
+
+      const payment = await PaymentModel.reject(parseInt(id), verifiedBy, keterangan);
+
+      return res.json({
+        success: true,
+        message: 'Pembayaran ditolak',
+        data: payment
+      });
+    } catch (error) {
+      console.error('Reject payment error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Get payment statistics
+   * Query params: bulan, tahun
+   */
+  static async getStatistics(req: Request, res: Response) {
+    try {
+      const { bulan, tahun } = req.query;
+
+      const stats = await PaymentModel.getStatistics({
+        bulan: bulan as string,
+        tahun: tahun ? parseInt(tahun as string) : undefined
+      });
+
+      return res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      console.error('Get statistics error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Get pending payments
+   * Admin only - returns all payments waiting for verification
+   */
+  static async getPending(req: Request, res: Response) {
+    try {
+      const payments = await PaymentModel.getPendingPayments();
+
+      return res.json({
+        success: true,
+        data: payments
+      });
+    } catch (error) {
+      console.error('Get pending payments error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+}

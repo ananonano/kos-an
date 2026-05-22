@@ -1,74 +1,272 @@
-﻿import { Request, Response } from "express";
-import { query } from "../config/database";
-import { AuthRequest } from "../middleware/auth.middleware";
-import { db } from "../config/firebase";
+﻿import { Request, Response } from 'express';
+import { BillModel } from '../models';
 
-export const getBills = async (req: Request, res: Response) => {
-  try {
-    const { page = 1, limit = 10, status = "" } = req.query;
-    const offset = (Number(page) - 1) * Number(limit);
-    let where = "WHERE 1=1";
-    const params: any[] = [];
-    let idx = 1;
-    if (status) { where += ` AND b.status = $${idx++}`; params.push(status); }
-    const countRes = await query(`SELECT COUNT(*) FROM bills b ${where}`, params);
-    const total = parseInt(countRes.rows[0].count);
-    params.push(Number(limit), offset);
-    const result = await query(`
-      SELECT b.*, u.name as tenant_name, r.room_number
-      FROM bills b
-      JOIN tenants t ON b.tenant_id = t.id
-      JOIN users u ON t.user_id = u.id
-      JOIN rooms r ON t.room_id = r.id
-      ${where} ORDER BY b.year DESC, b.month DESC LIMIT $${idx} OFFSET $${idx+1}
-    `, params);
-    res.json({
-      success: true,
-      data: result.rows.map(r => ({
-        id: r.id, tenantId: r.tenant_id, month: r.month, year: r.year,
-        amount: parseFloat(r.amount), dueDate: r.due_date, status: r.status,
-        createdAt: r.created_at,
-        tenant: { name: r.tenant_name, roomNumber: r.room_number },
-      })),
-      pagination: { page: Number(page), limit: Number(limit), total, totalPages: Math.ceil(total / Number(limit)) },
-    });
-  } catch { res.status(500).json({ success: false, message: "Server error" }); }
-};
+export class BillController {
+  /**
+   * Get all bills with pagination and filters
+   * Query params: page, limit, tenant_id, status, bulan, tahun, search
+   */
+  static async getAll(req: Request, res: Response) {
+    try {
+      const { page, limit, tenant_id, status, bulan, tahun, search } = req.query;
 
-export const generateBills = async (req: AuthRequest, res: Response) => {
-  try {
-    const { month, year } = req.body;
-    if (!month || !year) return res.status(400).json({ success: false, message: "Bulan dan tahun wajib diisi" });
-    // Get all active tenants with room price
-    const tenants = await query(`
-      SELECT t.id, r.price FROM tenants t
-      JOIN rooms r ON t.room_id = r.id
-      WHERE t.status = 'active'
-    `);
-    if (!tenants.rows.length) return res.status(400).json({ success: false, message: "Tidak ada penghuni aktif" });
-    const dueDate = `${year}-${String(month).padStart(2,"0")}-10`;
-    const created: any[] = [];
-    for (const t of tenants.rows) {
-      try {
-        const res2 = await query(
-          "INSERT INTO bills (tenant_id, month, year, amount, due_date) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (tenant_id, month, year) DO NOTHING RETURNING *",
-          [t.id, month, year, t.price, dueDate]
-        );
-        if (res2.rows.length) {
-          created.push(res2.rows[0]);
-          // Firebase notification
-          const userRes = await query("SELECT user_id FROM tenants WHERE id=$1", [t.id]);
-          if (userRes.rows.length) {
-            await db.collection("realtime_notifications").add({
-              userId: userRes.rows[0].user_id,
-              title: "Tagihan Baru",
-              message: `Tagihan bulan ${month}/${year} sebesar Rp ${t.price.toLocaleString()} telah diterbitkan.`,
-              type: "bill", isRead: false, createdAt: new Date(),
-            }).catch(() => {});
-          }
+      const result = await BillModel.findAll({
+        page: page ? parseInt(page as string) : 1,
+        limit: limit ? parseInt(limit as string) : 20,
+        tenant_id: tenant_id ? parseInt(tenant_id as string) : undefined,
+        status: status as any,
+        bulan: bulan as string,
+        tahun: tahun ? parseInt(tahun as string) : undefined,
+        search: search as string
+      });
+
+      return res.json({
+        success: true,
+        data: result.bills,
+        pagination: {
+          page: parseInt(page as string) || 1,
+          limit: parseInt(limit as string) || 20,
+          total: result.total,
+          totalPages: Math.ceil(result.total / (parseInt(limit as string) || 20))
         }
-      } catch {}
+      });
+    } catch (error) {
+      console.error('GetAll bills error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
     }
-    res.status(201).json({ success: true, data: created, message: `${created.length} tagihan berhasil digenerate` });
-  } catch { res.status(500).json({ success: false, message: "Server error" }); }
-};
+  }
+
+  /**
+   * Get bill by ID
+   * Returns single bill with tenant and room details
+   */
+  static async getById(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const bill = await BillModel.findById(parseInt(id));
+      if (!bill) {
+        return res.status(404).json({
+          success: false,
+          message: 'Tagihan tidak ditemukan'
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: bill
+      });
+    } catch (error) {
+      console.error('GetById bill error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Create new bill
+   * Admin only
+   */
+  static async create(req: Request, res: Response) {
+    try {
+      const { tenant_id, contract_id, bulan, tahun, jumlah, jatuh_tempo, denda, catatan } = req.body;
+
+      if (!tenant_id || !contract_id || !bulan || !tahun || !jumlah || !jatuh_tempo) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tenant ID, contract ID, bulan, tahun, jumlah, dan jatuh tempo harus diisi'
+        });
+      }
+
+      const exists = await BillModel.existsForTenantMonth(
+        parseInt(tenant_id),
+        bulan,
+        parseInt(tahun)
+      );
+
+      if (exists) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tagihan untuk tenant ini di bulan dan tahun tersebut sudah ada'
+        });
+      }
+
+      const bill = await BillModel.create({
+        tenant_id: parseInt(tenant_id),
+        contract_id: parseInt(contract_id),
+        bulan,
+        tahun: parseInt(tahun),
+        jumlah: parseFloat(jumlah),
+        jatuh_tempo: new Date(jatuh_tempo),
+        denda: denda ? parseFloat(denda) : undefined,
+        catatan
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: 'Tagihan berhasil dibuat',
+        data: bill
+      });
+    } catch (error) {
+      console.error('Create bill error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Update bill by ID
+   * Admin only
+   */
+  static async update(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { jumlah, status, jatuh_tempo, denda, catatan } = req.body;
+
+      const existingBill = await BillModel.findById(parseInt(id));
+      if (!existingBill) {
+        return res.status(404).json({
+          success: false,
+          message: 'Tagihan tidak ditemukan'
+        });
+      }
+
+      const bill = await BillModel.update(parseInt(id), {
+        jumlah: jumlah ? parseFloat(jumlah) : undefined,
+        status,
+        jatuh_tempo: jatuh_tempo ? new Date(jatuh_tempo) : undefined,
+        denda: denda !== undefined ? parseFloat(denda) : undefined,
+        catatan
+      });
+
+      return res.json({
+        success: true,
+        message: 'Tagihan berhasil diupdate',
+        data: bill
+      });
+    } catch (error) {
+      console.error('Update bill error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Delete bill by ID
+   * Admin only
+   */
+  static async delete(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const bill = await BillModel.findById(parseInt(id));
+      if (!bill) {
+        return res.status(404).json({
+          success: false,
+          message: 'Tagihan tidak ditemukan'
+        });
+      }
+
+      await BillModel.delete(parseInt(id));
+
+      return res.json({
+        success: true,
+        message: 'Tagihan berhasil dihapus'
+      });
+    } catch (error) {
+      console.error('Delete bill error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Get bill statistics
+   * Query params: bulan, tahun
+   */
+  static async getStatistics(req: Request, res: Response) {
+    try {
+      const { bulan, tahun } = req.query;
+
+      const stats = await BillModel.getStatistics({
+        bulan: bulan as string,
+        tahun: tahun ? parseInt(tahun as string) : undefined
+      });
+
+      return res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      console.error('Get statistics error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Update overdue bills to terlambat status
+   * Admin only - typically run as cron job
+   */
+  static async updateOverdue(req: Request, res: Response) {
+    try {
+      const count = await BillModel.updateOverdueBills();
+
+      return res.json({
+        success: true,
+        message: `${count} tagihan berhasil diupdate ke status terlambat`,
+        data: { updated_count: count }
+      });
+    } catch (error) {
+      console.error('Update overdue error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Generate monthly bills for all active tenants
+   * Admin only
+   */
+  static async generateMonthly(req: Request, res: Response) {
+    try {
+      const { bulan, tahun } = req.body;
+
+      if (!bulan || !tahun) {
+        return res.status(400).json({
+          success: false,
+          message: 'Bulan dan tahun harus diisi'
+        });
+      }
+
+      const bills = await BillModel.generateMonthlyBills(bulan, parseInt(tahun));
+
+      return res.status(201).json({
+        success: true,
+        message: `${bills.length} tagihan berhasil dibuat`,
+        data: bills
+      });
+    } catch (error) {
+      console.error('Generate monthly bills error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+}

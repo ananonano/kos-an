@@ -1,98 +1,282 @@
-﻿import { Request, Response } from "express";
-import { query } from "../config/database";
-import { AuthRequest } from "../middleware/auth.middleware";
-import bcrypt from "bcryptjs";
+﻿import { Request, Response } from 'express';
+import { TenantModel } from '../models';
 
-const formatTenant = (r: any) => ({
-  id: r.id, userId: r.user_id, roomId: r.room_id,
-  startDate: r.start_date, endDate: r.end_date, status: r.status,
-  createdAt: r.created_at,
-  user: { id: r.user_id, name: r.user_name, email: r.user_email, phone: r.user_phone, role: "tenant", createdAt: r.user_created_at, updatedAt: r.user_updated_at },
-  room: { id: r.room_id, roomNumber: r.room_number, price: parseFloat(r.room_price), status: r.room_status, facilities: r.room_facilities || [], images: [] },
-});
-
-export const getTenants = async (req: Request, res: Response) => {
-  try {
-    const { page = 1, limit = 10, search = "", status = "" } = req.query;
-    const offset = (Number(page) - 1) * Number(limit);
-    let where = "WHERE 1=1";
-    const params: any[] = [];
-    let idx = 1;
-    if (search) { where += ` AND (u.name ILIKE $${idx++} OR u.email ILIKE $${idx - 1})`; params.push(`%${search}%`); }
-    if (status) { where += ` AND t.status = $${idx++}`; params.push(status); }
-
-    const countRes = await query(`SELECT COUNT(*) FROM tenants t JOIN users u ON t.user_id=u.id ${where}`, params);
-    const total = parseInt(countRes.rows[0].count);
-
-    params.push(Number(limit), offset);
-    const result = await query(`
-      SELECT t.*, u.name as user_name, u.email as user_email, u.phone as user_phone,
-             u.created_at as user_created_at, u.updated_at as user_updated_at,
-             r.room_number, r.price as room_price, r.status as room_status, r.facilities as room_facilities
-      FROM tenants t
-      JOIN users u ON t.user_id = u.id
-      JOIN rooms r ON t.room_id = r.id
-      ${where} ORDER BY t.created_at DESC LIMIT $${idx} OFFSET $${idx + 1}
-    `, params);
-
-    res.json({
-      success: true,
-      data: result.rows.map(formatTenant),
-      pagination: { page: Number(page), limit: Number(limit), total, totalPages: Math.ceil(total / Number(limit)) },
-    });
-  } catch {
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-};
-
-export const createTenant = async (req: AuthRequest, res: Response) => {
-  try {
-    const { name, email, phone, roomId, startDate, endDate } = req.body;
-    const client = await (await import("../config/database")).getClient();
+export class TenantController {
+  /**
+   * Get all tenants with pagination and filters
+   * Query params: page, limit, status, kamar_id, search
+   */
+  static async getAll(req: Request, res: Response) {
     try {
-      await client.query("BEGIN");
-      const hashedPw = await bcrypt.hash("tenant123", 12);
-      const userRes = await client.query(
-        "INSERT INTO users (name, email, password, phone, role) VALUES ($1,$2,$3,$4,'tenant') RETURNING *",
-        [name, email, hashedPw, phone]
-      );
-      const tenantRes = await client.query(
-        "INSERT INTO tenants (user_id, room_id, start_date, end_date, status) VALUES ($1,$2,$3,$4,'active') RETURNING *",
-        [userRes.rows[0].id, roomId, startDate, endDate || null]
-      );
-      await client.query("UPDATE rooms SET status='occupied', updated_at=NOW() WHERE id=$1", [roomId]);
-      await client.query("COMMIT");
-      res.status(201).json({ success: true, data: { id: tenantRes.rows[0].id, ...tenantRes.rows[0] } });
-    } catch (err: any) {
-      await client.query("ROLLBACK");
-      if (err.code === "23505") return res.status(400).json({ success: false, message: "Email sudah terdaftar" });
-      throw err;
-    } finally { client.release(); }
-  } catch {
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-};
+      const { page, limit, status, kamar_id, search } = req.query;
 
-export const updateTenant = async (req: AuthRequest, res: Response) => {
-  try {
-    const { name, phone, status, endDate } = req.body;
-    const tenantRes = await query("SELECT user_id FROM tenants WHERE id=$1", [req.params.id]);
-    if (!tenantRes.rows.length) return res.status(404).json({ success: false, message: "Penghuni tidak ditemukan" });
-    await query("UPDATE users SET name=$1, phone=$2, updated_at=NOW() WHERE id=$3", [name, phone, tenantRes.rows[0].user_id]);
-    await query("UPDATE tenants SET status=$1, end_date=$2, updated_at=NOW() WHERE id=$3", [status, endDate || null, req.params.id]);
-    res.json({ success: true, message: "Data penghuni diperbarui" });
-  } catch {
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-};
+      const result = await TenantModel.findAll({
+        page: page ? parseInt(page as string) : 1,
+        limit: limit ? parseInt(limit as string) : 20,
+        status: status as any,
+        kamar_id: kamar_id ? parseInt(kamar_id as string) : undefined,
+        search: search as string
+      });
 
-export const deleteTenant = async (req: AuthRequest, res: Response) => {
-  try {
-    const result = await query("DELETE FROM tenants WHERE id=$1 RETURNING room_id", [req.params.id]);
-    if (!result.rows.length) return res.status(404).json({ success: false, message: "Penghuni tidak ditemukan" });
-    await query("UPDATE rooms SET status='available', updated_at=NOW() WHERE id=$1", [result.rows[0].room_id]);
-    res.json({ success: true, message: "Penghuni berhasil dihapus" });
-  } catch {
-    res.status(500).json({ success: false, message: "Server error" });
+      return res.json({
+        success: true,
+        data: result.tenants,
+        pagination: {
+          page: parseInt(page as string) || 1,
+          limit: parseInt(limit as string) || 20,
+          total: result.total,
+          totalPages: Math.ceil(result.total / (parseInt(limit as string) || 20))
+        }
+      });
+    } catch (error) {
+      console.error('GetAll tenants error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
   }
-};
+
+  /**
+   * Get tenant by ID
+   * Returns single tenant with details
+   */
+  static async getById(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const tenant = await TenantModel.findById(parseInt(id));
+      if (!tenant) {
+        return res.status(404).json({
+          success: false,
+          message: 'Penyewa tidak ditemukan'
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: tenant
+      });
+    } catch (error) {
+      console.error('GetById tenant error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Create new tenant
+   * Admin only
+   */
+  static async create(req: Request, res: Response) {
+    try {
+      const {
+        user_id,
+        kamar_id,
+        nama,
+        email,
+        no_telepon,
+        alamat_asal,
+        pekerjaan,
+        kontak_darurat,
+        tanggal_masuk
+      } = req.body;
+
+      if (!user_id || !nama || !email || !no_telepon) {
+        return res.status(400).json({
+          success: false,
+          message: 'User ID, nama, email, dan no telepon harus diisi'
+        });
+      }
+
+      const tenant = await TenantModel.create({
+        user_id,
+        kamar_id,
+        nama,
+        email,
+        no_telepon,
+        alamat_asal,
+        pekerjaan,
+        kontak_darurat,
+        tanggal_masuk: tanggal_masuk ? new Date(tanggal_masuk) : undefined
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: 'Penyewa berhasil ditambahkan',
+        data: tenant
+      });
+    } catch (error) {
+      console.error('Create tenant error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Update tenant by ID
+   * Admin only
+   */
+  static async update(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const {
+        kamar_id,
+        nama,
+        email,
+        no_telepon,
+        alamat_asal,
+        pekerjaan,
+        kontak_darurat,
+        tanggal_masuk,
+        tanggal_keluar,
+        status
+      } = req.body;
+
+      const existingTenant = await TenantModel.findById(parseInt(id));
+      if (!existingTenant) {
+        return res.status(404).json({
+          success: false,
+          message: 'Penyewa tidak ditemukan'
+        });
+      }
+
+      const tenant = await TenantModel.update(parseInt(id), {
+        kamar_id,
+        nama,
+        email,
+        no_telepon,
+        alamat_asal,
+        pekerjaan,
+        kontak_darurat,
+        tanggal_masuk: tanggal_masuk ? new Date(tanggal_masuk) : undefined,
+        tanggal_keluar: tanggal_keluar ? new Date(tanggal_keluar) : undefined,
+        status
+      });
+
+      return res.json({
+        success: true,
+        message: 'Penyewa berhasil diupdate',
+        data: tenant
+      });
+    } catch (error) {
+      console.error('Update tenant error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Delete tenant by ID
+   * Admin only
+   */
+  static async delete(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const tenant = await TenantModel.findById(parseInt(id));
+      if (!tenant) {
+        return res.status(404).json({
+          success: false,
+          message: 'Penyewa tidak ditemukan'
+        });
+      }
+
+      await TenantModel.delete(parseInt(id));
+
+      return res.json({
+        success: true,
+        message: 'Penyewa berhasil dihapus'
+      });
+    } catch (error) {
+      console.error('Delete tenant error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Assign tenant to room
+   * Admin only
+   */
+  static async assignToRoom(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { kamar_id } = req.body;
+
+      if (!kamar_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Kamar ID harus diisi'
+        });
+      }
+
+      const tenant = await TenantModel.assignToRoom(parseInt(id), kamar_id);
+
+      return res.json({
+        success: true,
+        message: 'Penyewa berhasil di-assign ke kamar',
+        data: tenant
+      });
+    } catch (error) {
+      console.error('Assign to room error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Remove tenant from room
+   * Admin only
+   */
+  static async removeFromRoom(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const tenant = await TenantModel.removeFromRoom(parseInt(id));
+
+      return res.json({
+        success: true,
+        message: 'Penyewa berhasil dikeluarkan dari kamar',
+        data: tenant
+      });
+    } catch (error) {
+      console.error('Remove from room error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Get tenant statistics
+   * Returns total, aktif, and tidak_aktif counts
+   */
+  static async getStatistics(req: Request, res: Response) {
+    try {
+      const stats = await TenantModel.getStatistics();
+
+      return res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      console.error('Get statistics error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+}

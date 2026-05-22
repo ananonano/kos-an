@@ -99,6 +99,7 @@ export class UserModel {
     // Update user
     static async update(id: number, data: {
         nama?: string;
+        email?: string;
         no_telepon?: string;
         foto?: string;
         password?: string;
@@ -110,6 +111,12 @@ export class UserModel {
         if (data.nama !== undefined) {
             updates.push(`nama = $${paramCount}`);
             values.push(data.nama);
+            paramCount++;
+        }
+
+        if (data.email !== undefined) {
+            updates.push(`email = $${paramCount}`);
+            values.push(data.email);
             paramCount++;
         }
 

@@ -1,101 +1,291 @@
-﻿import { Request, Response } from "express";
-import { query } from "../config/database";
-import { AuthRequest } from "../middleware/auth.middleware";
-import { db } from "../config/firebase";
+﻿import { Request, Response } from 'express';
+import { MaintenanceModel } from '../models';
 
-export const getMaintenance = async (req: Request, res: Response) => {
-  try {
-    const { page = 1, limit = 10, status = "" } = req.query;
-    const offset = (Number(page) - 1) * Number(limit);
-    let where = "WHERE 1=1";
-    const params: any[] = [];
-    let idx = 1;
-    if (status) { where += ` AND mr.status = $${idx++}`; params.push(status); }
-    const countRes = await query(`SELECT COUNT(*) FROM maintenance_reports mr ${where}`, params);
-    const total = parseInt(countRes.rows[0].count);
-    params.push(Number(limit), offset);
-    const result = await query(`
-      SELECT mr.*, u.name as tenant_name, r.room_number
-      FROM maintenance_reports mr
-      JOIN tenants t ON mr.tenant_id = t.id
-      JOIN users u ON t.user_id = u.id
-      JOIN rooms r ON t.room_id = r.id
-      ${where} ORDER BY mr.created_at DESC LIMIT $${idx} OFFSET $${idx+1}
-    `, params);
-    // Get progress for each report
-    const reports = await Promise.all(result.rows.map(async (row: any) => {
-      const progress = await query(
-        "SELECT * FROM maintenance_progress WHERE report_id=$1 ORDER BY created_at ASC",
-        [row.id]
-      );
-      return {
-        id: row.id, tenantId: row.tenant_id, title: row.title,
-        description: row.description, status: row.status, createdAt: row.created_at,
-        tenant: { name: row.tenant_name, roomNumber: row.room_number },
-        progress: progress.rows.map((p: any) => ({
-          id: p.id, reportId: p.report_id, description: p.description,
-          image: p.image, createdAt: p.created_at,
-        })),
-      };
-    }));
-    res.json({
-      success: true, data: reports,
-      pagination: { page: Number(page), limit: Number(limit), total, totalPages: Math.ceil(total / Number(limit)) },
-    });
-  } catch { res.status(500).json({ success: false, message: "Server error" }); }
-};
-
-export const updateMaintenance = async (req: AuthRequest, res: Response) => {
-  try {
-    const { status } = req.body;
-    const result = await query(
-      "UPDATE maintenance_reports SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING *, tenant_id",
-      [status, req.params.id]
-    );
-    if (!result.rows.length) return res.status(404).json({ success: false, message: "Laporan tidak ditemukan" });
-    // Notify tenant via Firebase
+export class MaintenanceController {
+  /**
+   * Get all maintenance requests with pagination and filters
+   * Query params: page, limit, tenant_id, kamar_id, status, prioritas, kategori, search
+   */
+  static async getAll(req: Request, res: Response) {
     try {
-      const userRes = await query("SELECT user_id FROM tenants WHERE id=$1", [result.rows[0].tenant_id]);
-      if (userRes.rows.length) {
-        const statusLabel = status === "in_progress" ? "sedang diproses" : status === "completed" ? "telah selesai" : "pending";
-        await db.collection("realtime_notifications").add({
-          userId: userRes.rows[0].user_id,
-          title: "Update Keluhan",
-          message: `Keluhan "${result.rows[0].title}" ${statusLabel}.`,
-          type: "maintenance", isRead: false, createdAt: new Date(),
+      const { page, limit, tenant_id, kamar_id, status, prioritas, kategori, search } = req.query;
+
+      const result = await MaintenanceModel.findAll({
+        page: page ? parseInt(page as string) : 1,
+        limit: limit ? parseInt(limit as string) : 20,
+        tenant_id: tenant_id ? parseInt(tenant_id as string) : undefined,
+        kamar_id: kamar_id ? parseInt(kamar_id as string) : undefined,
+        status: status as any,
+        prioritas: prioritas as any,
+        kategori: kategori as string,
+        search: search as string
+      });
+
+      return res.json({
+        success: true,
+        data: result.maintenance,
+        pagination: {
+          page: parseInt(page as string) || 1,
+          limit: parseInt(limit as string) || 20,
+          total: result.total,
+          totalPages: Math.ceil(result.total / (parseInt(limit as string) || 20))
+        }
+      });
+    } catch (error) {
+      console.error('GetAll maintenance error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Get maintenance request by ID
+   * Returns single maintenance with tenant and room details
+   */
+  static async getById(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const maintenance = await MaintenanceModel.findById(parseInt(id));
+      if (!maintenance) {
+        return res.status(404).json({
+          success: false,
+          message: 'Laporan maintenance tidak ditemukan'
         });
-        // Update Firestore realtime status
-        await db.collection("maintenance_status").doc(req.params.id).set({
-          status, updatedAt: new Date(), reportId: req.params.id,
-        }, { merge: true });
       }
-    } catch {}
-    res.json({ success: true, message: "Status keluhan diperbarui" });
-  } catch { res.status(500).json({ success: false, message: "Server error" }); }
-};
 
-export const addProgress = async (req: AuthRequest, res: Response) => {
-  try {
-    const { description } = req.body;
-    const imageUrl = req.file ? (req as any).fileUrl : null;
-    const result = await query(
-      "INSERT INTO maintenance_progress (report_id, description, image) VALUES ($1,$2,$3) RETURNING *",
-      [req.params.id, description, imageUrl]
-    );
-    // Auto update status to in_progress
-    await query(
-      "UPDATE maintenance_reports SET status='in_progress', updated_at=NOW() WHERE id=$1 AND status='pending'",
-      [req.params.id]
-    );
-    // Firestore realtime update
+      return res.json({
+        success: true,
+        data: maintenance
+      });
+    } catch (error) {
+      console.error('GetById maintenance error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Create new maintenance request
+   * Tenant submits complaint with photos
+   */
+  static async create(req: Request, res: Response) {
     try {
-      await db.collection("maintenance_status").doc(req.params.id).set({
-        status: "in_progress", lastProgress: description, updatedAt: new Date(),
-      }, { merge: true });
-    } catch {}
-    res.status(201).json({
-      success: true,
-      data: { id: result.rows[0].id, reportId: result.rows[0].report_id, description: result.rows[0].description, image: result.rows[0].image, createdAt: result.rows[0].created_at },
-    });
-  } catch { res.status(500).json({ success: false, message: "Server error" }); }
-};
+      const { tenant_id, kamar_id, judul, deskripsi, kategori, prioritas, foto } = req.body;
+
+      if (!tenant_id || !kamar_id || !judul || !deskripsi || !kategori) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tenant ID, kamar ID, judul, deskripsi, dan kategori harus diisi'
+        });
+      }
+
+      const maintenance = await MaintenanceModel.create({
+        tenant_id: parseInt(tenant_id),
+        kamar_id: parseInt(kamar_id),
+        judul,
+        deskripsi,
+        kategori,
+        prioritas,
+        foto
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: 'Laporan maintenance berhasil dibuat',
+        data: maintenance
+      });
+    } catch (error) {
+      console.error('Create maintenance error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Update maintenance request by ID
+   * Admin can update status, priority, comments, cost
+   */
+  static async update(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { judul, deskripsi, kategori, prioritas, status, foto, komentar_admin, biaya, tanggal_selesai } = req.body;
+
+      const existingMaintenance = await MaintenanceModel.findById(parseInt(id));
+      if (!existingMaintenance) {
+        return res.status(404).json({
+          success: false,
+          message: 'Laporan maintenance tidak ditemukan'
+        });
+      }
+
+      const maintenance = await MaintenanceModel.update(parseInt(id), {
+        judul,
+        deskripsi,
+        kategori,
+        prioritas,
+        status,
+        foto,
+        komentar_admin,
+        biaya: biaya ? parseFloat(biaya) : undefined,
+        tanggal_selesai: tanggal_selesai ? new Date(tanggal_selesai) : undefined
+      });
+
+      return res.json({
+        success: true,
+        message: 'Laporan maintenance berhasil diupdate',
+        data: maintenance
+      });
+    } catch (error) {
+      console.error('Update maintenance error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Update maintenance status
+   * Admin updates status: baru -> diproses -> selesai
+   */
+  static async updateStatus(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { status, komentar_admin, biaya } = req.body;
+
+      if (!status) {
+        return res.status(400).json({
+          success: false,
+          message: 'Status harus diisi'
+        });
+      }
+
+      const existingMaintenance = await MaintenanceModel.findById(parseInt(id));
+      if (!existingMaintenance) {
+        return res.status(404).json({
+          success: false,
+          message: 'Laporan maintenance tidak ditemukan'
+        });
+      }
+
+      const maintenance = await MaintenanceModel.update(parseInt(id), {
+        status,
+        komentar_admin,
+        biaya: biaya ? parseFloat(biaya) : undefined
+      });
+
+      return res.json({
+        success: true,
+        message: `Status berhasil diupdate ke ${status}`,
+        data: maintenance
+      });
+    } catch (error) {
+      console.error('Update status error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Delete maintenance request by ID
+   * Admin only
+   */
+  static async delete(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const maintenance = await MaintenanceModel.findById(parseInt(id));
+      if (!maintenance) {
+        return res.status(404).json({
+          success: false,
+          message: 'Laporan maintenance tidak ditemukan'
+        });
+      }
+
+      await MaintenanceModel.delete(parseInt(id));
+
+      return res.json({
+        success: true,
+        message: 'Laporan maintenance berhasil dihapus'
+      });
+    } catch (error) {
+      console.error('Delete maintenance error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Get maintenance statistics
+   * Returns counts by status and priority
+   */
+  static async getStatistics(req: Request, res: Response) {
+    try {
+      const stats = await MaintenanceModel.getStatistics();
+
+      return res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      console.error('Get statistics error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Get urgent maintenance requests
+   * Returns maintenance with urgent or high priority
+   */
+  static async getUrgent(req: Request, res: Response) {
+    try {
+      const maintenance = await MaintenanceModel.getUrgentRequests();
+
+      return res.json({
+        success: true,
+        data: maintenance
+      });
+    } catch (error) {
+      console.error('Get urgent maintenance error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Get maintenance by category
+   * Returns count of maintenance grouped by category
+   */
+  static async getByCategory(req: Request, res: Response) {
+    try {
+      const categories = await MaintenanceModel.getByCategory();
+
+      return res.json({
+        success: true,
+        data: categories
+      });
+    } catch (error) {
+      console.error('Get by category error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+}

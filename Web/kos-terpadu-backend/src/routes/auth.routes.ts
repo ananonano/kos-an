@@ -1,13 +1,14 @@
 ﻿import { Router } from "express";
-import { login, logout, getProfile, updateProfile, changePassword, forgotPassword, resetPassword } from "../controllers/auth.controller";
-import { authenticate, adminOnly } from "../middleware/auth.middleware";
+import { AuthController } from "../controllers";
+import { authenticate } from "../middleware/auth.middleware";
 
 const router = Router();
-router.post("/login", login);
-router.post("/logout", authenticate, logout);
-router.post("/forgot-password", forgotPassword);
-router.post("/reset-password", resetPassword);
-router.get("/profile", authenticate, adminOnly, getProfile);
-router.put("/profile", authenticate, adminOnly, updateProfile);
-router.put("/change-password", authenticate, adminOnly, changePassword);
+
+router.post("/register", AuthController.register);
+router.post("/login", AuthController.login);
+router.get("/me", authenticate, AuthController.getMe);
+router.post("/logout", authenticate, AuthController.logout);
+router.put("/profile", authenticate, AuthController.updateProfile);
+router.put("/change-password", authenticate, AuthController.changePassword);
+
 export default router;

@@ -14,6 +14,7 @@ import { toast } from "@/components/ui/toaster";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { authService } from "@/services/auth.service";
 
 const profileSchema = z.object({
   name: z.string().min(1, "Nama wajib diisi"),
@@ -44,19 +45,60 @@ export default function ProfilePage() {
   });
 
   const onSaveProfile = async (data: ProfileForm) => {
-    setIsLoadingProfile(true);
-    await new Promise(r => setTimeout(r, 800));
-    updateUser(data);
-    toast({ title: "Profil berhasil diperbarui", variant: "success" });
-    setIsLoadingProfile(false);
+    try {
+      setIsLoadingProfile(true);
+
+      // Call backend API with JSON data
+      const response = await authService.updateProfile({
+        nama: data.name,
+        email: data.email,
+        no_telepon: data.phone || "",
+      });
+
+      // Update local state with response data
+      if (response.success && response.data) {
+        updateUser({
+          name: response.data.nama,
+          email: response.data.email,
+          phone: response.data.no_telepon,
+        });
+      }
+
+      toast({ title: "Profil berhasil diperbarui", variant: "success" });
+    } catch (error: any) {
+      console.error("Update profile error:", error);
+      toast({
+        title: "Gagal memperbarui profil",
+        description: error.response?.data?.message || "Terjadi kesalahan",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingProfile(false);
+    }
   };
 
   const onChangePassword = async (data: PasswordForm) => {
-    setIsLoadingPassword(true);
-    await new Promise(r => setTimeout(r, 800));
-    toast({ title: "Password berhasil diubah", variant: "success" });
-    setIsLoadingPassword(false);
-    resetPass();
+    try {
+      setIsLoadingPassword(true);
+
+      // Call backend API
+      await authService.changePassword({
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      });
+
+      toast({ title: "Password berhasil diubah", variant: "success" });
+      resetPass();
+    } catch (error: any) {
+      console.error("Change password error:", error);
+      toast({
+        title: "Gagal mengubah password",
+        description: error.response?.data?.message || "Password saat ini salah",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingPassword(false);
+    }
   };
 
   return (
