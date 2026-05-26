@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle, XCircle, Eye, Download, FileSpreadsheet } from "lucide-react";
 import { exportPaymentsExcel, exportPaymentsPDF } from "@/utils/export";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -9,87 +9,143 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatCurrency, formatDate, getMonthName } from "@/lib/utils";
-import { seedPayments, seedBills, seedTenants } from "@/utils/seed-data";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/components/ui/toaster";
-import type { Payment, PaymentStatus } from "@/types";
+import type { PaymentStatus } from "@/types";
+import api from "@/lib/axios";
 
 export default function PaymentsPage() {
-  const [payments, setPayments] = useState<Payment[]>(seedPayments);
-  const [statusFilter, setStatusFilter] = useState<PaymentStatus | "">("");
-  const [viewPayment, setViewPayment] = useState<Payment | null>(null);
-  const [confirmAction, setConfirmAction] = useState<{ type: "verify" | "reject"; payment: Payment } | null>(null);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [viewPayment, setViewPayment] = useState<any | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: "verify" | "reject"; payment: any } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
+
+  // Fetch payments from backend
+  useEffect(() => {
+    fetchPayments();
+  }, []);
+
+  const fetchPayments = async () => {
+    try {
+      setIsFetching(true);
+      const response = await api.get("/payments");
+      if (response.data.success) {
+        setPayments(response.data.data);
+      }
+    } catch (error: any) {
+      console.error("Fetch payments error:", error);
+      toast({
+        title: "Gagal memuat data pembayaran",
+        description: error.response?.data?.message || "Terjadi kesalahan",
+        variant: "destructive"
+      });
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   const filtered = payments.filter(p => statusFilter ? p.status === statusFilter : true);
 
-  const getBillInfo = (billId: string) => seedBills.find(b => b.id === billId);
-  const getTenantInfo = (billId: string) => {
-    const bill = getBillInfo(billId);
-    return bill ? seedTenants.find(t => t.id === bill.tenantId) : null;
-  };
-
   const handleVerify = async () => {
     if (!confirmAction) return;
-    setIsLoading(true);
-    await new Promise(r => setTimeout(r, 800));
-    setPayments(prev => prev.map(p => p.id === confirmAction.payment.id ? { ...p, status: "verified" as PaymentStatus } : p));
-    toast({ title: "Pembayaran diverifikasi", description: "Status pembayaran berhasil diperbarui.", variant: "success" });
-    setIsLoading(false);
-    setConfirmAction(null);
+    try {
+      setIsLoading(true);
+      const response = await api.post(`/payments/${confirmAction.payment.id}/verify`);
+      if (response.data.success) {
+        toast({ title: "Pembayaran diverifikasi", description: "Status pembayaran berhasil diperbarui.", variant: "success" });
+        fetchPayments(); // Refresh data
+      }
+      setConfirmAction(null);
+    } catch (error: any) {
+      console.error("Verify payment error:", error);
+      toast({
+        title: "Gagal verifikasi pembayaran",
+        description: error.response?.data?.message || "Terjadi kesalahan",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleReject = async () => {
     if (!confirmAction) return;
-    setIsLoading(true);
-    await new Promise(r => setTimeout(r, 800));
-    setPayments(prev => prev.map(p => p.id === confirmAction.payment.id ? { ...p, status: "rejected" as PaymentStatus } : p));
-    toast({ title: "Pembayaran ditolak", variant: "destructive" });
-    setIsLoading(false);
-    setConfirmAction(null);
+    try {
+      setIsLoading(true);
+      const response = await api.post(`/payments/${confirmAction.payment.id}/reject`, {
+        keterangan: "Pembayaran ditolak oleh admin"
+      });
+      if (response.data.success) {
+        toast({ title: "Pembayaran ditolak", variant: "destructive" });
+        fetchPayments(); // Refresh data
+      }
+      setConfirmAction(null);
+    } catch (error: any) {
+      console.error("Reject payment error:", error);
+      toast({
+        title: "Gagal menolak pembayaran",
+        description: error.response?.data?.message || "Terjadi kesalahan",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const columns = [
-    { key: "id", header: "ID", render: (p: Payment) => <span className="font-mono text-xs text-muted-foreground">#{p.id}</span> },
-    { key: "tenant", header: "Penghuni", render: (p: Payment) => {
-      const t = getTenantInfo(p.billId);
-      return <span className="font-medium">{t?.user.name || "-"}</span>;
-    }},
-    { key: "bill", header: "Tagihan", render: (p: Payment) => {
-      const b = getBillInfo(p.billId);
-      return b ? <span className="text-sm">{getMonthName(b.month)} {b.year}</span> : "-";
-    }},
-    { key: "amount", header: "Jumlah", render: (p: Payment) => <span className="font-semibold">{formatCurrency(p.amount)}</span> },
-    { key: "paymentDate", header: "Tgl Bayar", render: (p: Payment) => <span className="text-sm">{formatDate(p.paymentDate)}</span> },
-    { key: "status", header: "Status", render: (p: Payment) => <PaymentStatusBadge status={p.status} /> },
-    { key: "actions", header: "Aksi", render: (p: Payment) => (
-      <div className="flex gap-1">
-        <Button variant="ghost" size="icon" onClick={() => setViewPayment(p)} title="Lihat detail">
-          <Eye className="w-4 h-4" />
-        </Button>
-        {p.status === "pending" && (
-          <>
-            <Button variant="ghost" size="icon" className="text-emerald-600 hover:text-emerald-700"
-              onClick={() => setConfirmAction({ type: "verify", payment: p })} title="Verifikasi">
-              <CheckCircle className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600"
-              onClick={() => setConfirmAction({ type: "reject", payment: p })} title="Tolak">
-              <XCircle className="w-4 h-4" />
-            </Button>
-          </>
-        )}
-      </div>
-    )},
+    { key: "id", header: "ID", render: (p: any) => <span className="font-mono text-xs text-muted-foreground">#{p.id}</span> },
+    { key: "tenant", header: "Penghuni", render: (p: any) => <span className="font-medium">{p.nama_tenant || "-"}</span> },
+    { key: "bill", header: "Tagihan", render: (p: any) => <span className="text-sm">{p.bulan || "-"} {p.tahun || ""}</span> },
+    { key: "amount", header: "Jumlah", render: (p: any) => <span className="font-semibold">{formatCurrency(p.jumlah)}</span> },
+    { key: "paymentDate", header: "Tgl Bayar", render: (p: any) => <span className="text-sm">{p.tanggal_bayar ? formatDate(p.tanggal_bayar) : "-"}</span> },
+    {
+      key: "status", header: "Status", render: (p: any) => {
+        return <PaymentStatusBadge status={p.status} />;
+      }
+    },
+    {
+      key: "actions", header: "Aksi", render: (p: any) => (
+        <div className="flex gap-1">
+          <Button variant="ghost" size="icon" onClick={() => setViewPayment(p)} title="Lihat detail">
+            <Eye className="w-4 h-4" />
+          </Button>
+          {p.status === "menunggu_verifikasi" && (
+            <>
+              <Button variant="ghost" size="icon" className="text-emerald-600 hover:text-emerald-700"
+                onClick={() => setConfirmAction({ type: "verify", payment: p })} title="Verifikasi">
+                <CheckCircle className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600"
+                onClick={() => setConfirmAction({ type: "reject", payment: p })} title="Tolak">
+                <XCircle className="w-4 h-4" />
+              </Button>
+            </>
+          )}
+        </div>
+      )
+    },
   ];
 
   const summary = {
     total: payments.length,
-    verified: payments.filter(p => p.status === "verified").length,
-    pending: payments.filter(p => p.status === "pending").length,
-    rejected: payments.filter(p => p.status === "rejected").length,
-    totalAmount: payments.filter(p => p.status === "verified").reduce((s, p) => s + p.amount, 0),
+    verified: payments.filter(p => p.status === "lunas").length,
+    pending: payments.filter(p => p.status === "menunggu_verifikasi").length,
+    rejected: payments.filter(p => p.status === "ditolak").length,
+    totalAmount: payments.filter(p => p.status === "lunas").reduce((s, p) => s + parseFloat(p.jumlah || 0), 0),
   };
+
+  if (isFetching) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Memuat data pembayaran...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -125,10 +181,10 @@ export default function PaymentsPage() {
 
       {/* Filter */}
       <div className="flex gap-3 flex-wrap">
-        {(["", "pending", "verified", "rejected"] as const).map((s) => (
+        {(["", "menunggu_verifikasi", "lunas", "ditolak"] as const).map((s) => (
           <button key={s} onClick={() => setStatusFilter(s)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${statusFilter === s ? "bg-primary text-primary-foreground shadow" : "bg-muted hover:bg-muted/80"}`}>
-            {s === "" ? "Semua" : s === "pending" ? "Pending" : s === "verified" ? "Terverifikasi" : "Ditolak"}
+            {s === "" ? "Semua" : s === "menunggu_verifikasi" ? "Pending" : s === "lunas" ? "Terverifikasi" : "Ditolak"}
           </button>
         ))}
       </div>
@@ -146,9 +202,9 @@ export default function PaymentsPage() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {[
                   { label: "ID Pembayaran", value: `#${viewPayment.id}` },
-                  { label: "Jumlah", value: formatCurrency(viewPayment.amount) },
-                  { label: "Tanggal Bayar", value: formatDate(viewPayment.paymentDate) },
-                  { label: "Status", value: <PaymentStatusBadge status={viewPayment.status} /> },
+                  { label: "Jumlah", value: formatCurrency(viewPayment.jumlah) },
+                  { label: "Tanggal Bayar", value: viewPayment.tanggal_bayar ? formatDate(viewPayment.tanggal_bayar) : "-" },
+                  { label: "Metode", value: viewPayment.metode_pembayaran || "-" },
                 ].map(({ label, value }) => (
                   <div key={label} className="space-y-1">
                     <p className="text-muted-foreground text-xs">{label}</p>
@@ -156,10 +212,16 @@ export default function PaymentsPage() {
                   </div>
                 ))}
               </div>
+              {viewPayment.keterangan && (
+                <div className="border rounded-lg p-3 bg-muted/30">
+                  <p className="text-xs text-muted-foreground mb-1">Keterangan</p>
+                  <p className="text-sm">{viewPayment.keterangan}</p>
+                </div>
+              )}
               <div className="border rounded-lg p-4 bg-muted/30 text-center">
                 <p className="text-sm text-muted-foreground">Bukti Pembayaran</p>
-                {viewPayment.proofImage ? (
-                  <img src={viewPayment.proofImage} alt="Bukti" className="mt-2 rounded-lg max-h-48 mx-auto" />
+                {viewPayment.bukti_pembayaran ? (
+                  <img src={viewPayment.bukti_pembayaran} alt="Bukti" className="mt-2 rounded-lg max-h-48 mx-auto" />
                 ) : (
                   <p className="text-sm mt-2 text-muted-foreground">Tidak ada bukti pembayaran</p>
                 )}

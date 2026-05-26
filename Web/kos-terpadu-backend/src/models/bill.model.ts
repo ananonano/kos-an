@@ -46,7 +46,7 @@ export class BillModel {
     static async findById(id: number): Promise<Bill | null> {
         const query = `
       SELECT b.*, 
-        t.nama as tenant_name,
+        t.nama as nama_tenant,
         r.nomor_kamar
       FROM bills b
       JOIN tenants t ON b.tenant_id = t.id
@@ -119,7 +119,7 @@ export class BillModel {
         // Get bills
         const query = `
       SELECT b.*, 
-        t.nama as tenant_name,
+        t.nama as nama_tenant,
         t.email as tenant_email,
         r.nomor_kamar
       FROM bills b
@@ -299,18 +299,16 @@ export class BillModel {
         try {
             await client.query('BEGIN');
 
-            // Get all active tenants with contracts
+            // Get all active tenants with their room prices (no contract needed)
             const getTenantsQuery = `
-        SELECT DISTINCT ON (t.id)
+        SELECT 
           t.id as tenant_id,
-          c.id as contract_id,
-          c.harga_per_bulan as jumlah
+          t.kamar_id,
+          r.harga as jumlah
         FROM tenants t
-        JOIN contracts c ON t.id = c.tenant_id
+        JOIN rooms r ON t.kamar_id = r.id
         WHERE t.status = 'aktif' 
-          AND c.status = 'aktif'
           AND t.kamar_id IS NOT NULL
-        ORDER BY t.id, c.created_at DESC
       `;
 
             const tenantsResult = await client.query(getTenantsQuery);
@@ -330,7 +328,7 @@ export class BillModel {
                 const checkResult = await client.query(checkQuery, [tenant.tenant_id, bulan, tahun]);
 
                 if (checkResult.rows.length === 0) {
-                    // Create bill
+                    // Create bill (contract_id can be null for now)
                     const insertQuery = `
             INSERT INTO bills (
               tenant_id, contract_id, bulan, tahun, jumlah,
@@ -342,7 +340,7 @@ export class BillModel {
 
                     const insertValues = [
                         tenant.tenant_id,
-                        tenant.contract_id,
+                        null, // contract_id is null (not using contracts)
                         bulan,
                         tahun,
                         tenant.jumlah,

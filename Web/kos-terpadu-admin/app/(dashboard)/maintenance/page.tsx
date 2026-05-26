@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Wrench, Plus, ChevronDown, ChevronUp, ImageIcon } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { MaintenanceStatusBadge } from "@/components/shared/StatusBadge";
@@ -10,60 +10,119 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { formatDate, timeAgo } from "@/lib/utils";
-import { seedMaintenance, seedTenants } from "@/utils/seed-data";
 import { toast } from "@/components/ui/toaster";
-import type { MaintenanceReport, MaintenanceStatus } from "@/types";
+import type { MaintenanceStatus } from "@/types";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import api from "@/lib/axios";
 
 const progressSchema = z.object({ description: z.string().min(1, "Deskripsi wajib diisi") });
 type ProgressForm = z.infer<typeof progressSchema>;
 
 export default function MaintenancePage() {
-  const [reports, setReports] = useState<MaintenanceReport[]>(seedMaintenance);
-  const [statusFilter, setStatusFilter] = useState<MaintenanceStatus | "">("");
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [progressDialog, setProgressDialog] = useState<MaintenanceReport | null>(null);
+  const [reports, setReports] = useState<any[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [expanded, setExpanded] = useState<number | null>(null);
+  const [progressDialog, setProgressDialog] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ProgressForm>({ resolver: zodResolver(progressSchema) });
 
-  const filtered = reports.filter(r => statusFilter ? r.status === statusFilter : true);
-  const getTenant = (id: string) => seedTenants.find(t => t.id === id);
+  // Fetch maintenance reports from backend
+  useEffect(() => {
+    fetchReports();
+  }, []);
 
-  const updateStatus = async (id: string, status: MaintenanceStatus) => {
-    setReports(prev => prev.map(r => r.id === id ? { ...r, status } : r));
-    toast({ title: "Status keluhan diperbarui", variant: "success" });
+  const fetchReports = async () => {
+    try {
+      setIsFetching(true);
+      const response = await api.get("/maintenance");
+      if (response.data.success) {
+        setReports(response.data.data);
+      }
+    } catch (error: any) {
+      console.error("Fetch maintenance error:", error);
+      toast({
+        title: "Gagal memuat data keluhan",
+        description: error.response?.data?.message || "Terjadi kesalahan",
+        variant: "destructive"
+      });
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  const filtered = reports.filter(r => statusFilter ? r.status === statusFilter : true);
+
+  const updateStatus = async (id: number, status: string) => {
+    try {
+      const response = await api.put(`/maintenance/${id}`, { status });
+      if (response.data.success) {
+        toast({ title: "Status keluhan diperbarui", variant: "success" });
+        fetchReports(); // Refresh data
+      }
+    } catch (error: any) {
+      console.error("Update status error:", error);
+      toast({
+        title: "Gagal update status",
+        description: error.response?.data?.message || "Terjadi kesalahan",
+        variant: "destructive"
+      });
+    }
   };
 
   const addProgress = async (data: ProgressForm) => {
     if (!progressDialog) return;
-    setIsLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    const newProgress = { id: Date.now().toString(), reportId: progressDialog.id, description: data.description, createdAt: new Date().toISOString() };
-    setReports(prev => prev.map(r => r.id === progressDialog.id
-      ? { ...r, progress: [...(r.progress || []), newProgress], status: "in_progress" as MaintenanceStatus }
-      : r
-    ));
-    toast({ title: "Progress ditambahkan", variant: "success" });
-    setIsLoading(false);
-    setProgressDialog(null);
-    reset();
+    try {
+      setIsLoading(true);
+      const response = await api.put(`/maintenance/${progressDialog.id}`, {
+        komentar_admin: data.description,
+        status: "diproses"
+      });
+      if (response.data.success) {
+        toast({ title: "Progress ditambahkan", variant: "success" });
+        fetchReports(); // Refresh data
+      }
+      setProgressDialog(null);
+      reset();
+    } catch (error: any) {
+      console.error("Add progress error:", error);
+      toast({
+        title: "Gagal menambah progress",
+        description: error.response?.data?.message || "Terjadi kesalahan",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const statusColors: Record<MaintenanceStatus, string> = {
-    pending: "border-l-amber-500",
-    in_progress: "border-l-blue-500",
-    completed: "border-l-emerald-500",
+  const statusColors: Record<string, string> = {
+    baru: "border-l-amber-500",
+    diproses: "border-l-blue-500",
+    selesai: "border-l-emerald-500",
+    ditolak: "border-l-red-500",
   };
 
   const summary = {
     total: reports.length,
-    pending: reports.filter(r => r.status === "pending").length,
-    in_progress: reports.filter(r => r.status === "in_progress").length,
-    completed: reports.filter(r => r.status === "completed").length,
+    pending: reports.filter(r => r.status === "baru").length,
+    in_progress: reports.filter(r => r.status === "diproses").length,
+    completed: reports.filter(r => r.status === "selesai").length,
   };
+
+  if (isFetching) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Memuat data keluhan...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -84,10 +143,10 @@ export default function MaintenancePage() {
       </div>
 
       <div className="flex gap-3 flex-wrap">
-        {(["", "pending", "in_progress", "completed"] as const).map((s) => (
+        {(["", "baru", "diproses", "selesai"] as const).map((s) => (
           <button key={s} onClick={() => setStatusFilter(s)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${statusFilter === s ? "bg-primary text-primary-foreground shadow" : "bg-muted hover:bg-muted/80"}`}>
-            {s === "" ? "Semua" : s === "pending" ? "Pending" : s === "in_progress" ? "Diproses" : "Selesai"}
+            {s === "" ? "Semua" : s === "baru" ? "Pending" : s === "diproses" ? "Diproses" : "Selesai"}
           </button>
         ))}
       </div>
@@ -100,7 +159,6 @@ export default function MaintenancePage() {
           </CardContent></Card>
         )}
         {filtered.map((report) => {
-          const tenant = getTenant(report.tenantId);
           const isExpanded = expanded === report.id;
           return (
             <Card key={report.id} className={`border-l-4 ${statusColors[report.status]}`}>
@@ -108,23 +166,24 @@ export default function MaintenancePage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold">{report.title}</h3>
+                      <h3 className="font-semibold">{report.judul}</h3>
                       <MaintenanceStatusBadge status={report.status} />
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">{report.description}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{report.deskripsi}</p>
                     <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                      <span> {tenant?.user.name || "-"}</span>
-                      <span> Kamar {tenant?.room.roomNumber || "-"}</span>
-                      <span> {timeAgo(report.createdAt)}</span>
+                      <span>👤 {report.nama_tenant || "-"}</span>
+                      <span>🏠 Kamar {report.nomor_kamar || "-"}</span>
+                      <span>🕐 {report.tanggal_lapor ? timeAgo(report.tanggal_lapor) : "-"}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <Select value={report.status} onValueChange={(v) => updateStatus(report.id, v as MaintenanceStatus)}>
+                    <Select value={report.status} onValueChange={(v) => updateStatus(report.id, v)}>
                       <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="in_progress">Diproses</SelectItem>
-                        <SelectItem value="completed">Selesai</SelectItem>
+                        <SelectItem value="baru">Pending</SelectItem>
+                        <SelectItem value="diproses">Diproses</SelectItem>
+                        <SelectItem value="selesai">Selesai</SelectItem>
+                        <SelectItem value="ditolak">Ditolak</SelectItem>
                       </SelectContent>
                     </Select>
                     <Button variant="outline" size="sm" onClick={() => setProgressDialog(report)}>
@@ -138,19 +197,17 @@ export default function MaintenancePage() {
 
                 {isExpanded && (
                   <div className="mt-4 pt-4 border-t space-y-3">
-                    <p className="text-sm font-medium">Riwayat Progress</p>
-                    {(!report.progress || report.progress.length === 0) ? (
-                      <p className="text-sm text-muted-foreground">Belum ada progress</p>
+                    <p className="text-sm font-medium">Komentar Admin</p>
+                    {!report.komentar_admin ? (
+                      <p className="text-sm text-muted-foreground">Belum ada komentar</p>
                     ) : (
-                      report.progress.map((p) => (
-                        <div key={p.id} className="flex gap-3 text-sm">
-                          <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                          <div>
-                            <p>{p.description}</p>
-                            <p className="text-xs text-muted-foreground">{timeAgo(p.createdAt)}</p>
-                          </div>
+                      <div className="flex gap-3 text-sm">
+                        <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                        <div>
+                          <p>{report.komentar_admin}</p>
+                          <p className="text-xs text-muted-foreground">{report.updated_at ? timeAgo(report.updated_at) : "-"}</p>
                         </div>
-                      ))
+                      </div>
                     )}
                   </div>
                 )}

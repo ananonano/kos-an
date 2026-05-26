@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Users, BedDouble, DoorOpen, DoorClosed, TrendingUp, AlertCircle, Clock, Wrench } from "lucide-react";
 import { StatsCard } from "@/components/shared/StatsCard";
@@ -7,19 +7,79 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate, timeAgo } from "@/lib/utils";
-import { seedStats, seedMonthlyIncome, seedActivities, seedPayments, seedMaintenance } from "@/utils/seed-data";
+import { seedMonthlyIncome, seedActivities } from "@/utils/seed-data";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { useAuthStore } from "@/store/auth.store";
+import api from "@/lib/axios";
+import { toast } from "@/components/ui/toaster";
 
 const activityIcons: Record<string, string> = {
-  payment: "", maintenance: "", tenant: "", announcement: "", bill: "",
+  payment: "💰", maintenance: "🔧", tenant: "👤", announcement: "📢", bill: "📄",
 };
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
-  const stats = seedStats;
+  const [stats, setStats] = useState<any>(null);
+  const [pendingPayments, setPendingPayments] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const monthlyIncome = seedMonthlyIncome;
   const activities = seedActivities;
+
+  // Fetch dashboard data from backend
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true);
+
+      // Fetch overview statistics
+      const overviewRes = await api.get("/dashboard/admin");
+      if (overviewRes.data.success) {
+        const data = overviewRes.data.data;
+
+        // Transform backend data to match frontend structure
+        setStats({
+          totalTenants: data.tenants?.aktif || 0,
+          totalRooms: data.rooms?.total || 0,
+          occupiedRooms: data.rooms?.terisi || 0,
+          availableRooms: data.rooms?.kosong || 0,
+          totalIncome: data.payments?.total_amount || 0,
+          unpaidBills: data.bills?.total_belum_lunas || 0,
+          pendingPayments: data.payments?.total_pending || 0,
+          pendingMaintenance: data.maintenance?.baru || 0,
+        });
+      }
+
+      // Fetch pending payments
+      const paymentsRes = await api.get("/payments?status=menunggu_verifikasi&limit=5");
+      if (paymentsRes.data.success) {
+        setPendingPayments(paymentsRes.data.data);
+      }
+    } catch (error: any) {
+      console.error("Fetch dashboard error:", error);
+      toast({
+        title: "Gagal memuat data dashboard",
+        description: error.response?.data?.message || "Terjadi kesalahan",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading || !stats) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Memuat data dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   const statsCards = [
     { title: "Total Penghuni", value: stats.totalTenants, subtitle: "Penghuni aktif", icon: Users, color: "blue" as const, trend: { value: 8, label: "bulan ini" } },
@@ -141,19 +201,19 @@ export default function DashboardPage() {
               <CardDescription>Menunggu verifikasi admin</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {seedPayments.filter(p => p.status === "pending").length === 0 ? (
+              {pendingPayments.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <p className="text-sm">Tidak ada pembayaran pending</p>
                 </div>
               ) : (
-                seedPayments.filter(p => p.status === "pending").map((pay) => (
+                pendingPayments.map((pay) => (
                   <div key={pay.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/30 transition-colors">
                     <div>
                       <p className="text-sm font-medium">Pembayaran #{pay.id}</p>
-                      <p className="text-xs text-muted-foreground">{formatDate(pay.paymentDate)}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(pay.tanggal_bayar || pay.created_at)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-bold">{formatCurrency(pay.amount)}</p>
+                      <p className="text-sm font-bold">{formatCurrency(pay.jumlah)}</p>
                       <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Pending</span>
                     </div>
                   </div>

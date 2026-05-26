@@ -8,33 +8,32 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn, getInitials, timeAgo } from "@/lib/utils";
 import { seedTenants } from "@/utils/seed-data";
 import { useAuthStore } from "@/store/auth.store";
-import type { ChatMessage, User } from "@/types";
+import type { ChatMessage } from "@/types";
 
 const dummyMessages: Record<string, ChatMessage[]> = {
   "1": [
-    { id: "m1", senderId: "u1", receiverId: "admin", message: "Pak, AC kamar saya tidak dingin sudah 2 hari.", timestamp: "2026-05-14T09:00:00", read: true, image: undefined },
-    { id: "m2", senderId: "admin", receiverId: "u1", message: "Baik, nanti saya kirim teknisi hari ini ya.", timestamp: "2026-05-14T09:05:00", read: true, image: undefined },
-    { id: "m3", senderId: "u1", receiverId: "admin", message: "Terima kasih pak!", timestamp: "2026-05-14T09:06:00", read: true, image: undefined },
+    { id: "m1", senderId: "1", receiverId: "admin", message: "Pak, AC kamar saya tidak dingin sudah 2 hari.", timestamp: "2026-05-14T09:00:00", read: true, image: undefined },
+    { id: "m2", senderId: "admin", receiverId: "1", message: "Baik, nanti saya kirim teknisi hari ini ya.", timestamp: "2026-05-14T09:05:00", read: true, image: undefined },
+    { id: "m3", senderId: "1", receiverId: "admin", message: "Terima kasih pak!", timestamp: "2026-05-14T09:06:00", read: true, image: undefined },
   ],
   "2": [
-    { id: "m4", senderId: "u2", receiverId: "admin", message: "Pak, kapan tagihan bulan ini bisa dibayar?", timestamp: "2026-05-15T10:00:00", read: false, image: undefined },
+    { id: "m4", senderId: "2", receiverId: "admin", message: "Pak, kapan tagihan bulan ini bisa dibayar?", timestamp: "2026-05-15T10:00:00", read: false, image: undefined },
   ],
   "3": [
-    { id: "m5", senderId: "u3", receiverId: "admin", message: "Selamat pagi pak, ada yang ingin saya tanyakan.", timestamp: "2026-05-16T08:00:00", read: false, image: undefined },
+    { id: "m5", senderId: "3", receiverId: "admin", message: "Selamat pagi pak, ada yang ingin saya tanyakan.", timestamp: "2026-05-16T08:00:00", read: false, image: undefined },
   ],
 };
 
 export default function ChatPage() {
-  const { user } = useAuthStore();
   const [selectedTenant, setSelectedTenant] = useState(seedTenants[0]);
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>(dummyMessages);
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const activeTenants = seedTenants.filter(t => t.status === "active");
+  const activeTenants = seedTenants.filter(t => t.status === "aktif");
   const filteredTenants = activeTenants.filter(t =>
-    t.user.name.toLowerCase().includes(search.toLowerCase())
+    t.nama.toLowerCase().includes(search.toLowerCase())
   );
 
   const currentMessages = messages[selectedTenant?.id] || [];
@@ -48,7 +47,7 @@ export default function ChatPage() {
     const newMsg: ChatMessage = {
       id: Date.now().toString(),
       senderId: "admin",
-      receiverId: selectedTenant.userId,
+      receiverId: selectedTenant.user_id.toString(),
       message: input.trim(),
       timestamp: new Date().toISOString(),
       read: false,
@@ -91,13 +90,13 @@ export default function ChatPage() {
                   className={cn("w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left", isSelected && "bg-muted")}>
                   <div className="relative">
                     <Avatar className="w-10 h-10">
-                      <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">{getInitials(tenant.user.name)}</AvatarFallback>
+                      <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">{getInitials(tenant.nama)}</AvatarFallback>
                     </Avatar>
                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium truncate">{tenant.user.name}</p>
+                      <p className="text-sm font-medium truncate">{tenant.nama}</p>
                       {lastMsg && <p className="text-xs text-muted-foreground shrink-0">{timeAgo(lastMsg.timestamp)}</p>}
                     </div>
                     <div className="flex items-center justify-between">
@@ -120,10 +119,10 @@ export default function ChatPage() {
           {/* Header */}
           <div className="h-14 border-b flex items-center px-4 gap-3">
             <Avatar className="w-8 h-8">
-              <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">{getInitials(selectedTenant?.user.name || "")}</AvatarFallback>
+              <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">{getInitials(selectedTenant?.nama || "")}</AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-medium text-sm">{selectedTenant?.user.name}</p>
+              <p className="font-medium text-sm">{selectedTenant?.nama}</p>
               <p className="text-xs text-emerald-500">Online</p>
             </div>
           </div>

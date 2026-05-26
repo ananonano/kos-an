@@ -1,55 +1,6 @@
 ﻿import { Request, Response } from 'express';
 import { RoomModel } from '../models';
 
-// Transform database room to frontend format
-const transformRoomToFrontend = (room: any) => {
-  // Handle fasilitas - could be JSONB object, JSON string, or array
-  let facilities = [];
-  try {
-    if (Array.isArray(room.fasilitas)) {
-      facilities = room.fasilitas;
-    } else if (typeof room.fasilitas === 'string') {
-      facilities = JSON.parse(room.fasilitas);
-    } else if (room.fasilitas && typeof room.fasilitas === 'object') {
-      // JSONB returns as object, convert to array if needed
-      facilities = Array.isArray(room.fasilitas) ? room.fasilitas : Object.values(room.fasilitas);
-    }
-  } catch (error) {
-    console.error('Error parsing fasilitas:', error);
-    facilities = [];
-  }
-
-  return {
-    id: room.id.toString(),
-    roomNumber: room.nomor_kamar || '',
-    type: room.tipe || '',
-    price: parseFloat(room.harga) || 0,
-    status: room.status === 'kosong' ? 'available' : room.status === 'terisi' ? 'occupied' : 'maintenance',
-    description: room.deskripsi || '',
-    facilities: facilities,
-    images: room.foto ? [room.foto] : [],
-    createdAt: room.created_at,
-    updatedAt: room.updated_at,
-  };
-};
-
-// Transform frontend data to database format
-const transformRoomToDatabase = (data: any) => {
-  const dbData: any = {};
-
-  if (data.roomNumber !== undefined) dbData.nomor_kamar = data.roomNumber;
-  if (data.type !== undefined) dbData.tipe = data.type;
-  if (data.price !== undefined) dbData.harga = parseFloat(data.price);
-  if (data.status !== undefined) {
-    dbData.status = data.status === 'available' ? 'kosong' : data.status === 'occupied' ? 'terisi' : 'kosong';
-  }
-  if (data.description !== undefined) dbData.deskripsi = data.description;
-  if (data.facilities !== undefined) dbData.fasilitas = data.facilities;
-  if (data.images !== undefined && data.images.length > 0) dbData.foto = data.images[0];
-
-  return dbData;
-};
-
 export class RoomController {
   /**
    * Get all rooms with pagination and filters
@@ -59,30 +10,20 @@ export class RoomController {
     try {
       const { page, limit, status, search } = req.query;
 
-      // Transform frontend status to database status
-      let dbStatus = status as string;
-      if (status === 'available') dbStatus = 'kosong';
-      else if (status === 'occupied') dbStatus = 'terisi';
-
-      console.log('Fetching rooms with params:', { page, limit, status: dbStatus, search });
+      console.log('Fetching rooms with params:', { page, limit, status, search });
 
       const result = await RoomModel.findAll({
         page: page ? parseInt(page as string) : 1,
         limit: limit ? parseInt(limit as string) : 20,
-        status: dbStatus as any,
+        status: status as any,
         search: search as string
       });
 
-      console.log(`Found ${result.total} rooms, transforming...`);
-
-      // Transform rooms to frontend format
-      const transformedRooms = result.rooms.map(transformRoomToFrontend);
-
-      console.log('Transformation successful, returning data');
+      console.log(`Found ${result.total} rooms`);
 
       return res.json({
         success: true,
-        data: transformedRooms,
+        data: result.rooms,
         pagination: {
           page: parseInt(page as string) || 1,
           limit: parseInt(limit as string) || 20,
@@ -119,7 +60,7 @@ export class RoomController {
 
       return res.json({
         success: true,
-        data: transformRoomToFrontend(room)
+        data: room
       });
     } catch (error) {
       console.error('GetById room error:', error);
@@ -136,17 +77,16 @@ export class RoomController {
    */
   static async create(req: Request, res: Response) {
     try {
-      // Transform frontend data to database format
-      const dbData = transformRoomToDatabase(req.body);
+      const { nomor_kamar, tipe, harga, status, deskripsi, fasilitas, foto } = req.body;
 
-      if (!dbData.nomor_kamar || !dbData.tipe || !dbData.harga) {
+      if (!nomor_kamar || !tipe || !harga) {
         return res.status(400).json({
           success: false,
           message: 'Nomor kamar, tipe, dan harga harus diisi'
         });
       }
 
-      const exists = await RoomModel.nomorKamarExists(dbData.nomor_kamar);
+      const exists = await RoomModel.nomorKamarExists(nomor_kamar);
       if (exists) {
         return res.status(400).json({
           success: false,
@@ -154,12 +94,20 @@ export class RoomController {
         });
       }
 
-      const room = await RoomModel.create(dbData);
+      const room = await RoomModel.create({
+        nomor_kamar,
+        tipe,
+        harga: parseFloat(harga),
+        status: status || 'kosong',
+        deskripsi,
+        fasilitas,
+        foto
+      });
 
       return res.status(201).json({
         success: true,
         message: 'Kamar berhasil ditambahkan',
-        data: transformRoomToFrontend(room)
+        data: room
       });
     } catch (error) {
       console.error('Create room error:', error);
@@ -177,6 +125,11 @@ export class RoomController {
   static async update(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      const { nomor_kamar, tipe, harga, status, deskripsi, fasilitas, foto } = req.body;
+
+      console.log('=== UPDATE ROOM REQUEST ===');
+      console.log('Room ID:', id);
+      console.log('Request body:', req.body);
 
       const existingRoom = await RoomModel.findById(parseInt(id));
       if (!existingRoom) {
@@ -186,11 +139,10 @@ export class RoomController {
         });
       }
 
-      // Transform frontend data to database format
-      const dbData = transformRoomToDatabase(req.body);
+      console.log('Existing room:', existingRoom);
 
-      if (dbData.nomor_kamar) {
-        const exists = await RoomModel.nomorKamarExists(dbData.nomor_kamar, parseInt(id));
+      if (nomor_kamar) {
+        const exists = await RoomModel.nomorKamarExists(nomor_kamar, parseInt(id));
         if (exists) {
           return res.status(400).json({
             success: false,
@@ -199,18 +151,33 @@ export class RoomController {
         }
       }
 
-      const room = await RoomModel.update(parseInt(id), dbData);
+      const updateData: any = {};
+      if (nomor_kamar !== undefined) updateData.nomor_kamar = nomor_kamar;
+      if (tipe !== undefined) updateData.tipe = tipe;
+      if (harga !== undefined) updateData.harga = parseFloat(harga);
+      if (status !== undefined) updateData.status = status;
+      if (deskripsi !== undefined) updateData.deskripsi = deskripsi;
+      if (fasilitas !== undefined) updateData.fasilitas = fasilitas;
+      if (foto !== undefined) updateData.foto = foto;
+
+      console.log('Update data:', updateData);
+
+      const room = await RoomModel.update(parseInt(id), updateData);
+
+      console.log('Updated room:', room);
 
       return res.json({
         success: true,
         message: 'Kamar berhasil diupdate',
-        data: transformRoomToFrontend(room!)
+        data: room
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Update room error:', error);
+      console.error('Error stack:', error.stack);
       return res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }

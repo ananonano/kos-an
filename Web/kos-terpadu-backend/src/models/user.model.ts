@@ -104,6 +104,10 @@ export class UserModel {
         foto?: string;
         password?: string;
     }): Promise<User | null> {
+        console.log('=== USER MODEL UPDATE ===');
+        console.log('ID:', id);
+        console.log('Data:', data);
+
         const updates: string[] = [];
         const values: any[] = [];
         let paramCount = 1;
@@ -140,6 +144,7 @@ export class UserModel {
         }
 
         if (updates.length === 0) {
+            console.log('No updates to perform');
             return this.findById(id);
         }
 
@@ -153,7 +158,13 @@ export class UserModel {
       RETURNING *
     `;
 
+        console.log('SQL Query:', query);
+        console.log('SQL Values:', values);
+
         const result = await pool.query(query, values);
+
+        console.log('Update result:', result.rows[0]);
+
         return result.rows[0] || null;
     }
 

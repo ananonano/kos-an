@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2, User, Phone, Mail } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
@@ -13,121 +13,242 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatDate, getInitials } from "@/lib/utils";
-import { seedTenants, seedRooms } from "@/utils/seed-data";
 import { toast } from "@/components/ui/toaster";
-import type { Tenant, TenantStatus } from "@/types";
+import type { TenantStatus } from "@/types";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import api from "@/lib/axios";
 
 const schema = z.object({
-  name: z.string().min(1, "Nama wajib diisi"),
+  nama: z.string().min(1, "Nama wajib diisi"),
   email: z.string().email("Email tidak valid"),
-  phone: z.string().min(10, "Nomor HP tidak valid"),
-  roomId: z.string().min(1, "Pilih kamar"),
-  startDate: z.string().min(1, "Tanggal masuk wajib diisi"),
-  endDate: z.string().optional(),
+  no_telepon: z.string().min(10, "Nomor HP tidak valid"),
+  kamar_id: z.string().min(1, "Pilih kamar"),
+  tanggal_masuk: z.string().min(1, "Tanggal masuk wajib diisi"),
+  tanggal_keluar: z.string().optional(),
+  alamat_asal: z.string().optional(),
+  pekerjaan: z.string().optional(),
+  kontak_darurat: z.string().optional(),
 });
 type FormData = z.infer<typeof schema>;
 
 export default function TenantsPage() {
-  const [tenants, setTenants] = useState<Tenant[]>(seedTenants);
+  const [tenants, setTenants] = useState<any[]>([]);
+  const [rooms, setRooms] = useState<any[]>([]);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<TenantStatus | "">("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editTenant, setEditTenant] = useState<Tenant | null>(null);
-  const [deleteTenant, setDeleteTenant] = useState<Tenant | null>(null);
+  const [editTenant, setEditTenant] = useState<any | null>(null);
+  const [deleteTenant, setDeleteTenant] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
 
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema) });
 
+  // Fetch tenants and rooms from backend
+  useEffect(() => {
+    fetchTenants();
+    fetchRooms();
+  }, []);
+
+  const fetchTenants = async () => {
+    try {
+      setIsFetching(true);
+      const response = await api.get("/tenants");
+      if (response.data.success) {
+        setTenants(response.data.data);
+      }
+    } catch (error: any) {
+      console.error("Fetch tenants error:", error);
+      toast({
+        title: "Gagal memuat data penghuni",
+        description: error.response?.data?.message || "Terjadi kesalahan",
+        variant: "destructive"
+      });
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  const fetchRooms = async () => {
+    try {
+      const response = await api.get("/rooms?status=kosong");
+      if (response.data.success) {
+        setRooms(response.data.data);
+      }
+    } catch (error: any) {
+      console.error("Fetch rooms error:", error);
+    }
+  };
+
   const filtered = tenants.filter(t => {
-    const matchSearch = t.user.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.user.email.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = t.nama?.toLowerCase().includes(search.toLowerCase()) ||
+      t.email?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter ? t.status === statusFilter : true;
     return matchSearch && matchStatus;
   });
 
   const openAdd = () => { setEditTenant(null); reset(); setDialogOpen(true); };
-  const openEdit = (t: Tenant) => {
+  const openEdit = (t: any) => {
     setEditTenant(t);
-    reset({ name: t.user.name, email: t.user.email, phone: t.user.phone || "", roomId: t.roomId, startDate: t.startDate, endDate: t.endDate });
+    reset({
+      nama: t.nama,
+      email: t.email,
+      no_telepon: t.no_telepon || "",
+      kamar_id: t.kamar_id?.toString(),
+      tanggal_masuk: t.tanggal_masuk?.split('T')[0],
+      tanggal_keluar: t.tanggal_keluar?.split('T')[0]
+    });
     setDialogOpen(true);
   };
 
   const onSubmit = async (data: FormData) => {
-    setIsLoading(true);
-    await new Promise(r => setTimeout(r, 800));
-    const room = seedRooms.find(r => r.id === data.roomId) || seedRooms[0];
-    if (editTenant) {
-      setTenants(prev => prev.map(t => t.id === editTenant.id ? {
-        ...t, roomId: data.roomId, startDate: data.startDate, endDate: data.endDate,
-        user: { ...t.user, name: data.name, email: data.email, phone: data.phone }, room
-      } : t));
-      toast({ title: "Data penghuni diperbarui", variant: "success" });
-    } else {
-      const newTenant: Tenant = {
-        id: Date.now().toString(), userId: Date.now().toString(), roomId: data.roomId,
-        startDate: data.startDate, endDate: data.endDate, status: "active",
-        user: { id: Date.now().toString(), name: data.name, email: data.email, phone: data.phone, role: "tenant", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-        room, createdAt: new Date().toISOString()
-      };
-      setTenants(prev => [...prev, newTenant]);
-      toast({ title: "Penghuni ditambahkan", variant: "success" });
+    try {
+      setIsLoading(true);
+
+      if (editTenant) {
+        // Update existing tenant
+        const response = await api.put(`/tenants/${editTenant.id}`, data);
+        if (response.data.success) {
+          toast({ title: "Data penghuni berhasil diperbarui", variant: "success" });
+          fetchTenants(); // Refresh data
+        }
+      } else {
+        // Create new tenant - first create user account
+        try {
+          // Create user account first
+          const userResponse = await api.post("/auth/register", {
+            email: data.email,
+            password: "tenant123", // Default password
+            nama: data.nama,
+            no_telepon: data.no_telepon,
+            role: "tenant"
+          });
+
+          if (userResponse.data.success) {
+            // Then create tenant with user_id
+            const tenantData = {
+              ...data,
+              user_id: userResponse.data.user.id
+            };
+
+            const response = await api.post("/tenants", tenantData);
+            if (response.data.success) {
+              toast({
+                title: "Penghuni berhasil ditambahkan",
+                description: "Password default: tenant123",
+                variant: "success"
+              });
+              fetchTenants(); // Refresh data
+            }
+          }
+        } catch (userError: any) {
+          // If user already exists, try to find user by email
+          if (userError.response?.status === 400) {
+            toast({
+              title: "Email sudah terdaftar",
+              description: "Gunakan email lain atau hubungi admin",
+              variant: "destructive"
+            });
+            setIsLoading(false);
+            return;
+          }
+          throw userError;
+        }
+      }
+
+      setDialogOpen(false);
+    } catch (error: any) {
+      console.error("Submit tenant error:", error);
+      toast({
+        title: editTenant ? "Gagal memperbarui penghuni" : "Gagal menambahkan penghuni",
+        description: error.response?.data?.message || "Terjadi kesalahan",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-    setDialogOpen(false);
   };
 
   const handleDelete = async () => {
     if (!deleteTenant) return;
-    setIsLoading(true);
-    await new Promise(r => setTimeout(r, 500));
-    setTenants(prev => prev.filter(t => t.id !== deleteTenant.id));
-    toast({ title: "Penghuni dihapus", variant: "destructive" });
-    setIsLoading(false);
-    setDeleteTenant(null);
+    try {
+      setIsLoading(true);
+      const response = await api.delete(`/tenants/${deleteTenant.id}`);
+      if (response.data.success) {
+        toast({ title: "Penghuni berhasil dihapus", variant: "destructive" });
+        fetchTenants(); // Refresh data
+      }
+      setDeleteTenant(null);
+    } catch (error: any) {
+      console.error("Delete tenant error:", error);
+      toast({
+        title: "Gagal menghapus penghuni",
+        description: error.response?.data?.message || "Terjadi kesalahan",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const columns = [
-    { key: "user", header: "Penghuni", render: (t: Tenant) => (
-      <div className="flex items-center gap-3">
-        <Avatar className="w-9 h-9">
-          <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">{getInitials(t.user.name)}</AvatarFallback>
-        </Avatar>
-        <div>
-          <p className="font-medium text-sm">{t.user.name}</p>
-          <p className="text-xs text-muted-foreground">{t.user.email}</p>
+    {
+      key: "user", header: "Penghuni", render: (t: any) => (
+        <div className="flex items-center gap-3">
+          <Avatar className="w-9 h-9">
+            <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">{getInitials(t.nama || "")}</AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="font-medium text-sm">{t.nama}</p>
+            <p className="text-xs text-muted-foreground">{t.email}</p>
+          </div>
+        </div>
+      )
+    },
+    { key: "room", header: "Kamar", render: (t: any) => <span className="font-medium">Kamar {t.nomor_kamar || "-"}</span> },
+    {
+      key: "phone", header: "No. HP", render: (t: any) => (
+        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+          <Phone className="w-3 h-3" />{t.no_telepon || "-"}
+        </div>
+      )
+    },
+    { key: "startDate", header: "Tgl Masuk", render: (t: any) => <span className="text-sm">{t.tanggal_masuk ? formatDate(t.tanggal_masuk) : "-"}</span> },
+    { key: "status", header: "Status", render: (t: any) => <TenantStatusBadge status={t.status} /> },
+    {
+      key: "actions", header: "Aksi", render: (t: any) => (
+        <div className="flex gap-2">
+          <Button variant="ghost" size="icon" onClick={() => openEdit(t)}><Pencil className="w-4 h-4" /></Button>
+          <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => setDeleteTenant(t)}><Trash2 className="w-4 h-4" /></Button>
+        </div>
+      )
+    },
+  ];
+
+  if (isFetching) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Memuat data penghuni...</p>
         </div>
       </div>
-    )},
-    { key: "room", header: "Kamar", render: (t: Tenant) => <span className="font-medium">Kamar {t.room.roomNumber}</span> },
-    { key: "phone", header: "No. HP", render: (t: Tenant) => (
-      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-        <Phone className="w-3 h-3" />{t.user.phone || "-"}
-      </div>
-    )},
-    { key: "startDate", header: "Tgl Masuk", render: (t: Tenant) => <span className="text-sm">{formatDate(t.startDate)}</span> },
-    { key: "status", header: "Status", render: (t: Tenant) => <TenantStatusBadge status={t.status} /> },
-    { key: "actions", header: "Aksi", render: (t: Tenant) => (
-      <div className="flex gap-2">
-        <Button variant="ghost" size="icon" onClick={() => openEdit(t)}><Pencil className="w-4 h-4" /></Button>
-        <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => setDeleteTenant(t)}><Trash2 className="w-4 h-4" /></Button>
-      </div>
-    )},
-  ];
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Manajemen Penghuni" description={`${tenants.filter(t => t.status === "active").length} penghuni aktif`}
+      <PageHeader title="Manajemen Penghuni" description={`${tenants.filter(t => t.status === "aktif").length} penghuni aktif`}
         actions={<Button onClick={openAdd}><Plus className="w-4 h-4 mr-2" />Tambah Penghuni</Button>}
       />
 
       <div className="flex gap-3 flex-wrap">
-        {(["", "active", "inactive"] as const).map((s) => (
+        {(["", "aktif", "tidak_aktif"] as const).map((s) => (
           <button key={s} onClick={() => setStatusFilter(s)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${statusFilter === s ? "bg-primary text-primary-foreground shadow" : "bg-muted hover:bg-muted/80"}`}>
-            {s === "" ? "Semua" : s === "active" ? "Aktif" : "Nonaktif"}
+            {s === "" ? "Semua" : s === "aktif" ? "Aktif" : "Nonaktif"}
           </button>
         ))}
       </div>
@@ -144,8 +265,8 @@ export default function TenantsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2 col-span-2">
                 <Label>Nama Lengkap</Label>
-                <Input {...register("name")} placeholder="Budi Santoso" />
-                {errors.name && <p className="text-red-500 text-xs">{errors.name.message}</p>}
+                <Input {...register("nama")} placeholder="Budi Santoso" />
+                {errors.nama && <p className="text-red-500 text-xs">{errors.nama.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Email</Label>
@@ -154,31 +275,44 @@ export default function TenantsPage() {
               </div>
               <div className="space-y-2">
                 <Label>No. HP</Label>
-                <Input {...register("phone")} placeholder="081234567890" />
-                {errors.phone && <p className="text-red-500 text-xs">{errors.phone.message}</p>}
+                <Input {...register("no_telepon")} placeholder="081234567890" />
+                {errors.no_telepon && <p className="text-red-500 text-xs">{errors.no_telepon.message}</p>}
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>Alamat Asal</Label>
+                <Input {...register("alamat_asal")} placeholder="Jl. Contoh No. 123, Jakarta" />
+              </div>
+              <div className="space-y-2">
+                <Label>Pekerjaan</Label>
+                <Input {...register("pekerjaan")} placeholder="Mahasiswa / Karyawan" />
+              </div>
+              <div className="space-y-2">
+                <Label>Kontak Darurat</Label>
+                <Input {...register("kontak_darurat")} placeholder="081234567890" />
               </div>
               <div className="space-y-2 col-span-2">
                 <Label>Kamar</Label>
-                <Controller name="roomId" control={control} render={({ field }) => (
+                <Controller name="kamar_id" control={control} render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger><SelectValue placeholder="Pilih kamar" /></SelectTrigger>
                     <SelectContent>
-                      {seedRooms.filter(r => r.status === "available").map(r => (
-                        <SelectItem key={r.id} value={r.id}>Kamar {r.roomNumber}  {r.price.toLocaleString("id-ID")}/bln</SelectItem>
+                      {rooms.map(r => (
+                        <SelectItem key={r.id} value={r.id.toString()}>Kamar {r.nomor_kamar} - Rp {r.harga.toLocaleString("id-ID")}/bln</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 )} />
-                {errors.roomId && <p className="text-red-500 text-xs">{errors.roomId.message}</p>}
+                {errors.kamar_id && <p className="text-red-500 text-xs">{errors.kamar_id.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Tanggal Masuk</Label>
-                <Input {...register("startDate")} type="date" />
-                {errors.startDate && <p className="text-red-500 text-xs">{errors.startDate.message}</p>}
+                <Input {...register("tanggal_masuk")} type="date" />
+                {errors.tanggal_masuk && <p className="text-red-500 text-xs">{errors.tanggal_masuk.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Tanggal Keluar (opsional)</Label>
-                <Input {...register("endDate")} type="date" />
+                <Input {...register("tanggal_keluar")} type="date" />
+                <p className="text-xs text-muted-foreground">Kosongkan jika belum ada rencana keluar</p>
               </div>
             </div>
             <DialogFooter>
@@ -190,7 +324,7 @@ export default function TenantsPage() {
       </Dialog>
 
       <ConfirmDialog open={!!deleteTenant} onClose={() => setDeleteTenant(null)} onConfirm={handleDelete}
-        title="Hapus Penghuni" description={`Yakin ingin menghapus data ${deleteTenant?.user.name}?`}
+        title="Hapus Penghuni" description={`Yakin ingin menghapus data ${deleteTenant?.nama}?`}
         confirmLabel="Hapus" isLoading={isLoading} />
     </div>
   );

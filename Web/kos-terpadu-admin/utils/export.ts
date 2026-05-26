@@ -14,9 +14,9 @@ export function exportPaymentsExcel(payments: Payment[]) {
   const data = payments.map((p, i) => ({
     "No": i + 1,
     "ID Pembayaran": p.id,
-    "Jumlah": p.amount,
-    "Tanggal Bayar": formatDate(p.paymentDate),
-    "Status": p.status === "verified" ? "Lunas" : p.status === "pending" ? "Pending" : "Ditolak",
+    "Jumlah": p.jumlah,
+    "Tanggal Bayar": formatDate(p.tanggal_bayar),
+    "Status": p.status === "lunas" ? "Lunas" : p.status === "menunggu_verifikasi" ? "Menunggu Verifikasi" : "Ditolak",
   }));
   exportToExcel(data, "laporan-pembayaran", "Pembayaran");
 }
@@ -24,10 +24,10 @@ export function exportPaymentsExcel(payments: Payment[]) {
 export function exportBillsExcel(bills: Bill[]) {
   const data = bills.map((b, i) => ({
     "No": i + 1,
-    "Periode": `${getMonthName(b.month)} ${b.year}`,
-    "Jumlah": b.amount,
-    "Jatuh Tempo": formatDate(b.dueDate),
-    "Status": b.status === "paid" ? "Lunas" : b.status === "pending" ? "Belum Bayar" : "Jatuh Tempo",
+    "Periode": `${b.bulan} ${b.tahun}`,
+    "Jumlah": b.jumlah,
+    "Jatuh Tempo": formatDate(b.jatuh_tempo),
+    "Status": b.status === "lunas" ? "Lunas" : b.status === "belum_lunas" ? "Belum Lunas" : "Terlambat",
   }));
   exportToExcel(data, "laporan-tagihan", "Tagihan");
 }
@@ -35,12 +35,12 @@ export function exportBillsExcel(bills: Bill[]) {
 export function exportTenantsExcel(tenants: Tenant[]) {
   const data = tenants.map((t, i) => ({
     "No": i + 1,
-    "Nama": t.user.name,
-    "Email": t.user.email,
-    "No. HP": t.user.phone || "-",
-    "Kamar": `Kamar ${t.room.roomNumber}`,
-    "Tgl Masuk": formatDate(t.startDate),
-    "Status": t.status === "active" ? "Aktif" : "Nonaktif",
+    "Nama": t.nama,
+    "Email": t.email,
+    "No. HP": t.no_telepon || "-",
+    "Kamar": t.nomor_kamar ? `Kamar ${t.nomor_kamar}` : "-",
+    "Tgl Masuk": t.tanggal_masuk ? formatDate(t.tanggal_masuk) : "-",
+    "Status": t.status === "aktif" ? "Aktif" : "Tidak Aktif",
   }));
   exportToExcel(data, "data-penghuni", "Penghuni");
 }
@@ -86,9 +86,9 @@ export async function exportPaymentsPDF(payments: Payment[]) {
     const row = [
       String(idx + 1),
       `#${p.id}`,
-      formatCurrency(p.amount),
-      formatDate(p.paymentDate),
-      p.status === "verified" ? "Lunas" : p.status === "pending" ? "Pending" : "Ditolak",
+      formatCurrency(p.jumlah),
+      formatDate(p.tanggal_bayar),
+      p.status === "lunas" ? "Lunas" : p.status === "menunggu_verifikasi" ? "Menunggu Verifikasi" : "Ditolak",
     ];
     row.forEach((cell, i) => {
       doc.text(cell, x, y);
@@ -98,7 +98,7 @@ export async function exportPaymentsPDF(payments: Payment[]) {
 
   // Summary
   y += 15;
-  const total = payments.filter(p => p.status === "verified").reduce((s, p) => s + p.amount, 0);
+  const total = payments.filter(p => p.status === "lunas").reduce((s, p) => s + p.jumlah, 0);
   doc.setFont("helvetica", "bold");
   doc.text(`Total Diterima: ${formatCurrency(total)}`, 14, y);
 
@@ -134,10 +134,10 @@ export async function exportBillsPDF(bills: Bill[]) {
     x = 14;
     const row = [
       String(idx + 1),
-      `${getMonthName(b.month)} ${b.year}`,
-      formatCurrency(b.amount),
-      formatDate(b.dueDate),
-      b.status === "paid" ? "Lunas" : b.status === "pending" ? "Belum Bayar" : "Jatuh Tempo",
+      `${b.bulan} ${b.tahun}`,
+      formatCurrency(b.jumlah),
+      formatDate(b.jatuh_tempo),
+      b.status === "lunas" ? "Lunas" : b.status === "belum_lunas" ? "Belum Lunas" : "Terlambat",
     ];
     row.forEach((cell, i) => { doc.text(cell, x, y); x += colWidths[i]; });
   });

@@ -44,7 +44,7 @@ export class ContractModel {
     static async findById(id: number): Promise<Contract | null> {
         const query = `
       SELECT c.*, 
-        t.nama as tenant_name,
+        t.nama as nama_tenant,
         t.email as tenant_email,
         r.nomor_kamar,
         r.tipe as tipe_kamar
@@ -61,7 +61,7 @@ export class ContractModel {
     static async findActiveByTenantId(tenantId: number): Promise<Contract | null> {
         const query = `
       SELECT c.*, 
-        t.nama as tenant_name,
+        t.nama as nama_tenant,
         r.nomor_kamar
       FROM contracts c
       JOIN tenants t ON c.tenant_id = t.id
@@ -78,7 +78,7 @@ export class ContractModel {
     static async findActiveByKamarId(kamarId: number): Promise<Contract | null> {
         const query = `
       SELECT c.*, 
-        t.nama as tenant_name,
+        t.nama as nama_tenant,
         t.email as tenant_email
       FROM contracts c
       JOIN tenants t ON c.tenant_id = t.id
@@ -145,7 +145,7 @@ export class ContractModel {
         // Get contracts
         const query = `
       SELECT c.*, 
-        t.nama as tenant_name,
+        t.nama as nama_tenant,
         t.email as tenant_email,
         r.nomor_kamar,
         r.tipe as tipe_kamar

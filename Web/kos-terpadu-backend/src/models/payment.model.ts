@@ -44,7 +44,7 @@ export class PaymentModel {
     static async findById(id: number): Promise<Payment | null> {
         const query = `
       SELECT p.*, 
-        t.nama as tenant_name,
+        t.nama as nama_tenant,
         t.email as tenant_email,
         r.nomor_kamar,
         b.bulan,
@@ -117,7 +117,7 @@ export class PaymentModel {
         // Get payments
         const query = `
       SELECT p.*, 
-        t.nama as tenant_name,
+        t.nama as nama_tenant,
         t.email as tenant_email,
         r.nomor_kamar,
         b.bulan,
@@ -351,7 +351,7 @@ export class PaymentModel {
     static async getPendingPayments(): Promise<Payment[]> {
         const query = `
       SELECT p.*, 
-        t.nama as tenant_name,
+        t.nama as nama_tenant,
         r.nomor_kamar,
         b.bulan,
         b.tahun

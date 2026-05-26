@@ -11,6 +11,7 @@ export class RoomModel {
         nomor_kamar: string;
         tipe: string;
         harga: number;
+        status?: string;
         deskripsi?: string;
         fasilitas?: string[];
         foto?: string;
@@ -25,7 +26,7 @@ export class RoomModel {
             data.nomor_kamar,
             data.tipe,
             data.harga,
-            'kosong',
+            data.status || 'kosong',
             data.deskripsi || null,
             data.fasilitas ? JSON.stringify(data.fasilitas) : null,
             data.foto || null,
@@ -183,6 +184,10 @@ export class RoomModel {
         fasilitas?: string[];
         foto?: string;
     }): Promise<Room | null> {
+        console.log('=== ROOM MODEL UPDATE ===');
+        console.log('ID:', id);
+        console.log('Data:', data);
+
         const updates: string[] = [];
         const values: any[] = [];
         let paramCount = 1;
@@ -230,6 +235,7 @@ export class RoomModel {
         }
 
         if (updates.length === 0) {
+            console.log('No updates to perform');
             return this.findById(id);
         }
 
@@ -243,14 +249,34 @@ export class RoomModel {
       RETURNING *
     `;
 
+        console.log('SQL Query:', query);
+        console.log('SQL Values:', values);
+
         const result = await pool.query(query, values);
 
-        if (result.rows.length === 0) return null;
+        if (result.rows.length === 0) {
+            console.log('No room found with ID:', id);
+            return null;
+        }
 
         const room = result.rows[0];
         if (room.fasilitas) {
-            room.fasilitas = JSON.parse(room.fasilitas);
+            try {
+                if (typeof room.fasilitas === 'string') {
+                    room.fasilitas = JSON.parse(room.fasilitas);
+                }
+                if (!Array.isArray(room.fasilitas)) {
+                    room.fasilitas = [];
+                }
+            } catch (error) {
+                console.error('Error parsing fasilitas for room', room.id, error);
+                room.fasilitas = [];
+            }
+        } else {
+            room.fasilitas = [];
         }
+
+        console.log('Update result:', room);
 
         return room;
     }

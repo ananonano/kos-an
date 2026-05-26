@@ -7,11 +7,11 @@ export const paymentService = {
     return res.data;
   },
   verify: async (id: string) => {
-    const res = await api.put<ApiResponse<Payment>>(`/payments/${id}/verify`);
+    const res = await api.post<ApiResponse<Payment>>(`/payments/${id}/verify`);
     return res.data;
   },
   reject: async (id: string, reason?: string) => {
-    const res = await api.put<ApiResponse<Payment>>(`/payments/${id}/reject`, { reason });
+    const res = await api.post<ApiResponse<Payment>>(`/payments/${id}/reject`, { reason });
     return res.data;
   },
 };

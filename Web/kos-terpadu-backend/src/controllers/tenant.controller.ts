@@ -1,5 +1,5 @@
 ﻿import { Request, Response } from 'express';
-import { TenantModel } from '../models';
+import { TenantModel, UserModel } from '../models';
 
 export class TenantController {
   /**
@@ -175,6 +175,7 @@ export class TenantController {
   /**
    * Delete tenant by ID
    * Admin only
+   * Also deletes the associated user account (cascade delete)
    */
   static async delete(req: Request, res: Response) {
     try {
@@ -188,11 +189,17 @@ export class TenantController {
         });
       }
 
+      // Delete tenant first
       await TenantModel.delete(parseInt(id));
+
+      // Then delete associated user account
+      if (tenant.user_id) {
+        await UserModel.delete(tenant.user_id);
+      }
 
       return res.json({
         success: true,
-        message: 'Penyewa berhasil dihapus'
+        message: 'Penyewa dan akun user berhasil dihapus'
       });
     } catch (error) {
       console.error('Delete tenant error:', error);

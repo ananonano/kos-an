@@ -8,11 +8,28 @@ export class DashboardController {
    */
   static async getAdminOverview(req: Request, res: Response) {
     try {
-      const roomStats = await RoomModel.getStatistics();
-      const tenantStats = await TenantModel.getStatistics();
-      const billStats = await BillModel.getStatistics();
-      const paymentStats = await PaymentModel.getStatistics();
-      const maintenanceStats = await MaintenanceModel.getStatistics();
+      const [roomStats, tenantStats, billStats, paymentStats, maintenanceStats] = await Promise.all([
+        RoomModel.getStatistics().catch(err => {
+          console.error('Room stats error:', err);
+          return { total: 0, kosong: 0, terisi: 0, tingkat_okupansi: 0 };
+        }),
+        TenantModel.getStatistics().catch(err => {
+          console.error('Tenant stats error:', err);
+          return { total: 0, aktif: 0, tidak_aktif: 0 };
+        }),
+        BillModel.getStatistics().catch(err => {
+          console.error('Bill stats error:', err);
+          return { total_tagihan: 0, total_lunas: 0, total_belum_lunas: 0, total_terlambat: 0, total_pendapatan: 0, total_tunggakan: 0 };
+        }),
+        PaymentModel.getStatistics().catch(err => {
+          console.error('Payment stats error:', err);
+          return { total: 0, total_amount: 0, total_pending: 0, total_verified: 0, total_rejected: 0 };
+        }),
+        MaintenanceModel.getStatistics().catch(err => {
+          console.error('Maintenance stats error:', err);
+          return { total: 0, baru: 0, diproses: 0, selesai: 0, ditolak: 0, urgent: 0, tinggi: 0, sedang: 0, rendah: 0 };
+        })
+      ]);
 
       const overview = {
         rooms: roomStats,

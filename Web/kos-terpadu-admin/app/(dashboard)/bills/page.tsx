@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Zap, FileText, Download, FileSpreadsheet } from "lucide-react";
 import { exportBillsExcel, exportBillsPDF } from "@/utils/export";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -12,69 +12,135 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { formatCurrency, formatDate, getMonthName } from "@/lib/utils";
 import { MONTHS } from "@/lib/constants";
-import { seedBills, seedTenants } from "@/utils/seed-data";
 import { toast } from "@/components/ui/toaster";
-import type { Bill, BillStatus } from "@/types";
+import type { BillStatus } from "@/types";
+import api from "@/lib/axios";
 
 export default function BillsPage() {
-  const [bills, setBills] = useState<Bill[]>(seedBills);
-  const [statusFilter, setStatusFilter] = useState<BillStatus | "">("");
+  const [bills, setBills] = useState<any[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const [generateOpen, setGenerateOpen] = useState(false);
   const [genMonth, setGenMonth] = useState(String(new Date().getMonth() + 1));
   const [genYear, setGenYear] = useState(String(new Date().getFullYear()));
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
+
+  // Fetch bills from backend
+  useEffect(() => {
+    updateOverdueBills();
+  }, []);
+
+  const updateOverdueBills = async () => {
+    try {
+      // Auto-update overdue bills first
+      await api.post("/bills/update-overdue");
+    } catch (error: any) {
+      console.error("Update overdue error:", error);
+    } finally {
+      // Then fetch bills
+      fetchBills();
+    }
+  };
+
+  const fetchBills = async () => {
+    try {
+      setIsFetching(true);
+      const response = await api.get("/bills");
+      if (response.data.success) {
+        setBills(response.data.data);
+      }
+    } catch (error: any) {
+      console.error("Fetch bills error:", error);
+      toast({
+        title: "Gagal memuat data tagihan",
+        description: error.response?.data?.message || "Terjadi kesalahan",
+        variant: "destructive"
+      });
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   const filtered = bills.filter(b => statusFilter ? b.status === statusFilter : true);
-  const getTenant = (tenantId: string) => seedTenants.find(t => t.id === tenantId);
 
   const handleGenerate = async () => {
-    setIsLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    const activeTenants = seedTenants.filter(t => t.status === "active");
-    const newBills: Bill[] = activeTenants.map(t => ({
-      id: `gen-${Date.now()}-${t.id}`,
-      tenantId: t.id,
-      month: parseInt(genMonth),
-      year: parseInt(genYear),
-      amount: t.room.price,
-      dueDate: `${genYear}-${genMonth.padStart(2, "0")}-10`,
-      status: "pending" as BillStatus,
-      createdAt: new Date().toISOString(),
-    }));
-    setBills(prev => [...prev, ...newBills]);
-    toast({ title: `${newBills.length} tagihan berhasil digenerate`, description: `Tagihan ${getMonthName(parseInt(genMonth))} ${genYear}`, variant: "success" });
-    setIsLoading(false);
-    setGenerateOpen(false);
+    try {
+      setIsLoading(true);
+
+      const response = await api.post("/bills/generate-monthly", {
+        bulan: MONTHS[parseInt(genMonth) - 1],
+        tahun: parseInt(genYear)
+      });
+
+      if (response.data.success) {
+        toast({
+          title: "Tagihan berhasil digenerate",
+          description: `Tagihan ${MONTHS[parseInt(genMonth) - 1]} ${genYear}`,
+          variant: "success"
+        });
+        fetchBills(); // Refresh data
+      }
+
+      setGenerateOpen(false);
+    } catch (error: any) {
+      console.error("Generate bills error:", error);
+      toast({
+        title: "Gagal generate tagihan",
+        description: error.response?.data?.message || "Terjadi kesalahan",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const columns = [
-    { key: "tenant", header: "Penghuni", render: (b: Bill) => {
-      const t = getTenant(b.tenantId);
-      return <span className="font-medium">{t?.user.name || "-"}</span>;
-    }},
-    { key: "room", header: "Kamar", render: (b: Bill) => {
-      const t = getTenant(b.tenantId);
-      return <span>Kamar {t?.room.roomNumber || "-"}</span>;
-    }},
-    { key: "period", header: "Periode", render: (b: Bill) => <span className="font-medium">{getMonthName(b.month)} {b.year}</span> },
-    { key: "amount", header: "Jumlah", render: (b: Bill) => <span className="font-semibold">{formatCurrency(b.amount)}</span> },
-    { key: "dueDate", header: "Jatuh Tempo", render: (b: Bill) => (
-      <span className={`text-sm ${new Date(b.dueDate) < new Date() && b.status === "pending" ? "text-red-500 font-medium" : ""}`}>
-        {formatDate(b.dueDate)}
-      </span>
-    )},
-    { key: "status", header: "Status", render: (b: Bill) => <BillStatusBadge status={b.status} /> },
+    {
+      key: "tenant", header: "Penghuni", render: (b: any) => {
+        return <span className="font-medium">{b.nama_tenant || "-"}</span>;
+      }
+    },
+    {
+      key: "room", header: "Kamar", render: (b: any) => {
+        return <span>Kamar {b.nomor_kamar || "-"}</span>;
+      }
+    },
+    { key: "period", header: "Periode", render: (b: any) => <span className="font-medium">{b.bulan} {b.tahun}</span> },
+    { key: "amount", header: "Jumlah", render: (b: any) => <span className="font-semibold">{formatCurrency(b.jumlah)}</span> },
+    {
+      key: "dueDate", header: "Jatuh Tempo", render: (b: any) => (
+        <span className={`text-sm ${new Date(b.jatuh_tempo) < new Date() && b.status === "belum_lunas" ? "text-red-500 font-medium" : ""}`}>
+          {b.jatuh_tempo ? formatDate(b.jatuh_tempo) : "-"}
+        </span>
+      )
+    },
+    {
+      key: "status", header: "Status", render: (b: any) => {
+        return <BillStatusBadge status={b.status} />;
+      }
+    },
   ];
 
   const summary = {
     total: bills.length,
-    paid: bills.filter(b => b.status === "paid").length,
-    pending: bills.filter(b => b.status === "pending").length,
-    overdue: bills.filter(b => b.status === "overdue").length,
-    totalAmount: bills.filter(b => b.status === "paid").reduce((s, b) => s + b.amount, 0),
+    paid: bills.filter(b => b.status === "lunas").length,
+    pending: bills.filter(b => b.status === "belum_lunas").length,
+    overdue: bills.filter(b => b.status === "terlambat").length,
+    totalAmount: bills.filter(b => b.status === "lunas").reduce((s, b) => s + parseFloat(b.jumlah || 0), 0),
   };
 
   const years = [2024, 2025, 2026, 2027];
+
+  if (isFetching) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Memuat data tagihan...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -109,10 +175,10 @@ export default function BillsPage() {
       </div>
 
       <div className="flex gap-3 flex-wrap">
-        {(["", "pending", "paid", "overdue"] as const).map((s) => (
+        {(["", "belum_lunas", "lunas", "terlambat"] as const).map((s) => (
           <button key={s} onClick={() => setStatusFilter(s)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${statusFilter === s ? "bg-primary text-primary-foreground shadow" : "bg-muted hover:bg-muted/80"}`}>
-            {s === "" ? "Semua" : s === "pending" ? "Belum Bayar" : s === "paid" ? "Lunas" : "Jatuh Tempo"}
+            {s === "" ? "Semua" : s === "belum_lunas" ? "Belum Bayar" : s === "lunas" ? "Lunas" : "Jatuh Tempo"}
           </button>
         ))}
       </div>
@@ -127,7 +193,6 @@ export default function BillsPage() {
           <div className="space-y-4">
             <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 text-sm text-blue-700 dark:text-blue-300">
               <p className="font-medium">Tagihan akan digenerate untuk semua penghuni aktif.</p>
-              <p className="mt-1 text-xs">Total: {seedTenants.filter(t => t.status === "active").length} penghuni</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

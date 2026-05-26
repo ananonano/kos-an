@@ -171,6 +171,10 @@ export class AuthController {
       // Handle both JSON and FormData
       const { nama, email, no_telepon, foto } = req.body;
 
+      console.log('=== UPDATE PROFILE REQUEST ===');
+      console.log('User ID:', userId);
+      console.log('Request body:', { nama, email, no_telepon, foto });
+
       const updateData: any = {};
 
       if (nama !== undefined) updateData.nama = nama;
@@ -188,7 +192,11 @@ export class AuthController {
       if (no_telepon !== undefined) updateData.no_telepon = no_telepon;
       if (foto !== undefined) updateData.foto = foto;
 
+      console.log('Update data:', updateData);
+
       const user = await UserModel.update(userId, updateData);
+
+      console.log('Updated user:', user);
 
       if (!user) {
         return res.status(404).json({

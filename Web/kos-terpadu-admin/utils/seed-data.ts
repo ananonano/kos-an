@@ -26,46 +26,46 @@ export const seedMonthlyIncome: MonthlyIncome[] = [
   { month: "Des", income: 52000000 },
 ];
 
-export const seedRooms: Room[] = [
-  { id: "1", roomNumber: "101", price: 1500000, status: "occupied", description: "Kamar standar lantai 1", facilities: ["AC","WiFi","Kamar Mandi Dalam","Kasur","Lemari"], images: [], createdAt: "2024-01-01" },
-  { id: "2", roomNumber: "102", price: 1500000, status: "available", description: "Kamar standar lantai 1", facilities: ["AC","WiFi","Kamar Mandi Dalam","Kasur"], images: [], createdAt: "2024-01-01" },
-  { id: "3", roomNumber: "201", price: 2000000, status: "occupied", description: "Kamar deluxe lantai 2", facilities: ["AC","WiFi","Kamar Mandi Dalam","Kasur","Lemari","TV","Kulkas"], images: [], createdAt: "2024-01-01" },
-  { id: "4", roomNumber: "202", price: 2000000, status: "maintenance", description: "Kamar deluxe lantai 2", facilities: ["AC","WiFi","Kamar Mandi Dalam","Kasur","Lemari","TV"], images: [], createdAt: "2024-01-01" },
-  { id: "5", roomNumber: "301", price: 2500000, status: "occupied", description: "Kamar premium lantai 3", facilities: ["AC","WiFi","Kamar Mandi Dalam","Kasur","Lemari","TV","Kulkas","Dapur Bersama"], images: [], createdAt: "2024-01-01" },
-  { id: "6", roomNumber: "302", price: 2500000, status: "available", description: "Kamar premium lantai 3", facilities: ["AC","WiFi","Kamar Mandi Dalam","Kasur","Lemari","TV","Kulkas"], images: [], createdAt: "2024-01-01" },
+export const seedRooms: any[] = [
+  { id: 1, nomor_kamar: "101", harga: 1500000, status: "terisi", deskripsi: "Kamar standar lantai 1", fasilitas: ["AC", "WiFi", "Kamar Mandi Dalam", "Kasur", "Lemari"], foto: "", created_at: "2024-01-01" },
+  { id: 2, nomor_kamar: "102", harga: 1500000, status: "kosong", deskripsi: "Kamar standar lantai 1", fasilitas: ["AC", "WiFi", "Kamar Mandi Dalam", "Kasur"], foto: "", created_at: "2024-01-01" },
+  { id: 3, nomor_kamar: "201", harga: 2000000, status: "terisi", deskripsi: "Kamar deluxe lantai 2", fasilitas: ["AC", "WiFi", "Kamar Mandi Dalam", "Kasur", "Lemari", "TV", "Kulkas"], foto: "", created_at: "2024-01-01" },
+  { id: 4, nomor_kamar: "202", harga: 2000000, status: "kosong", deskripsi: "Kamar deluxe lantai 2", fasilitas: ["AC", "WiFi", "Kamar Mandi Dalam", "Kasur", "Lemari", "TV"], foto: "", created_at: "2024-01-01" },
+  { id: 5, nomor_kamar: "301", harga: 2500000, status: "terisi", deskripsi: "Kamar premium lantai 3", fasilitas: ["AC", "WiFi", "Kamar Mandi Dalam", "Kasur", "Lemari", "TV", "Kulkas", "Dapur Bersama"], foto: "", created_at: "2024-01-01" },
+  { id: 6, nomor_kamar: "302", harga: 2500000, status: "kosong", deskripsi: "Kamar premium lantai 3", fasilitas: ["AC", "WiFi", "Kamar Mandi Dalam", "Kasur", "Lemari", "TV", "Kulkas"], foto: "", created_at: "2024-01-01" },
 ];
 
-export const seedTenants: Tenant[] = [
-  { id: "1", userId: "u1", roomId: "1", startDate: "2024-01-01", status: "active", user: { id: "u1", name: "Budi Santoso", email: "budi@email.com", phone: "081234567890", role: "tenant", createdAt: "2024-01-01", updatedAt: "2024-01-01" }, room: seedRooms[0], createdAt: "2024-01-01" },
-  { id: "2", userId: "u2", roomId: "3", startDate: "2024-02-01", status: "active", user: { id: "u2", name: "Siti Rahayu", email: "siti@email.com", phone: "081234567891", role: "tenant", createdAt: "2024-02-01", updatedAt: "2024-02-01" }, room: seedRooms[2], createdAt: "2024-02-01" },
-  { id: "3", userId: "u3", roomId: "5", startDate: "2024-03-01", status: "active", user: { id: "u3", name: "Ahmad Fauzi", email: "ahmad@email.com", phone: "081234567892", role: "tenant", createdAt: "2024-03-01", updatedAt: "2024-03-01" }, room: seedRooms[4], createdAt: "2024-03-01" },
-  { id: "4", userId: "u4", roomId: "1", startDate: "2023-06-01", endDate: "2024-01-01", status: "inactive", user: { id: "u4", name: "Dewi Lestari", email: "dewi@email.com", phone: "081234567893", role: "tenant", createdAt: "2023-06-01", updatedAt: "2024-01-01" }, room: seedRooms[0], createdAt: "2023-06-01" },
+export const seedTenants: any[] = [
+  { id: 1, user_id: 1, kamar_id: 1, nama: "Budi Santoso", email: "budi@email.com", no_telepon: "081234567890", tanggal_masuk: "2024-01-01", status: "aktif", created_at: "2024-01-01" },
+  { id: 2, user_id: 2, kamar_id: 3, nama: "Siti Rahayu", email: "siti@email.com", no_telepon: "081234567891", tanggal_masuk: "2024-02-01", status: "aktif", created_at: "2024-02-01" },
+  { id: 3, user_id: 3, kamar_id: 5, nama: "Ahmad Fauzi", email: "ahmad@email.com", no_telepon: "081234567892", tanggal_masuk: "2024-03-01", status: "aktif", created_at: "2024-03-01" },
+  { id: 4, user_id: 4, kamar_id: 1, nama: "Dewi Lestari", email: "dewi@email.com", no_telepon: "081234567893", tanggal_masuk: "2023-06-01", tanggal_keluar: "2024-01-01", status: "tidak_aktif", created_at: "2023-06-01" },
 ];
 
-export const seedBills: Bill[] = [
-  { id: "b1", tenantId: "1", month: 5, year: 2026, amount: 1500000, dueDate: "2026-05-10", status: "pending", createdAt: "2026-05-01" },
-  { id: "b2", tenantId: "2", month: 5, year: 2026, amount: 2000000, dueDate: "2026-05-10", status: "paid", createdAt: "2026-05-01" },
-  { id: "b3", tenantId: "3", month: 5, year: 2026, amount: 2500000, dueDate: "2026-05-10", status: "pending", createdAt: "2026-05-01" },
-  { id: "b4", tenantId: "1", month: 4, year: 2026, amount: 1500000, dueDate: "2026-04-10", status: "paid", createdAt: "2026-04-01" },
+export const seedBills: any[] = [
+  { id: 1, tenant_id: 1, bulan: "Mei", tahun: 2026, jumlah: 1500000, jatuh_tempo: "2026-05-10", status: "belum_lunas", created_at: "2026-05-01" },
+  { id: 2, tenant_id: 2, bulan: "Mei", tahun: 2026, jumlah: 2000000, jatuh_tempo: "2026-05-10", status: "lunas", created_at: "2026-05-01" },
+  { id: 3, tenant_id: 3, bulan: "Mei", tahun: 2026, jumlah: 2500000, jatuh_tempo: "2026-05-10", status: "belum_lunas", created_at: "2026-05-01" },
+  { id: 4, tenant_id: 1, bulan: "April", tahun: 2026, jumlah: 1500000, jatuh_tempo: "2026-04-10", status: "lunas", created_at: "2026-04-01" },
 ];
 
-export const seedPayments: Payment[] = [
-  { id: "p1", billId: "b2", amount: 2000000, proofImage: "", status: "verified", paymentDate: "2026-05-05", createdAt: "2026-05-05" },
-  { id: "p2", billId: "b4", amount: 1500000, proofImage: "", status: "verified", paymentDate: "2026-04-08", createdAt: "2026-04-08" },
-  { id: "p3", billId: "b1", amount: 1500000, proofImage: "", status: "pending", paymentDate: "2026-05-12", createdAt: "2026-05-12" },
+export const seedPayments: any[] = [
+  { id: 1, bill_id: 2, tenant_id: 2, jumlah: 2000000, bukti_pembayaran: "", status: "lunas", tanggal_bayar: "2026-05-05", created_at: "2026-05-05" },
+  { id: 2, bill_id: 4, tenant_id: 1, jumlah: 1500000, bukti_pembayaran: "", status: "lunas", tanggal_bayar: "2026-04-08", created_at: "2026-04-08" },
+  { id: 3, bill_id: 1, tenant_id: 1, jumlah: 1500000, bukti_pembayaran: "", status: "menunggu_verifikasi", tanggal_bayar: "2026-05-12", created_at: "2026-05-12" },
 ];
 
-export const seedMaintenance: MaintenanceReport[] = [
-  { id: "m1", tenantId: "1", title: "AC tidak dingin", description: "AC di kamar 101 tidak berfungsi dengan baik, sudah 3 hari tidak dingin.", status: "in_progress", createdAt: "2026-05-10" },
-  { id: "m2", tenantId: "2", title: "Keran bocor", description: "Keran kamar mandi bocor dan air terus mengalir.", status: "pending", createdAt: "2026-05-14" },
-  { id: "m3", tenantId: "3", title: "Lampu mati", description: "Lampu kamar utama mati dan perlu diganti.", status: "completed", createdAt: "2026-05-08" },
-  { id: "m4", tenantId: "1", title: "Pintu susah dikunci", description: "Kunci pintu kamar susah diputar.", status: "pending", createdAt: "2026-05-16" },
+export const seedMaintenance: any[] = [
+  { id: 1, tenant_id: 1, kamar_id: 1, judul: "AC tidak dingin", deskripsi: "AC di kamar 101 tidak berfungsi dengan baik, sudah 3 hari tidak dingin.", status: "diproses", prioritas: "tinggi", kategori: "AC", created_at: "2026-05-10" },
+  { id: 2, tenant_id: 2, kamar_id: 3, judul: "Keran bocor", deskripsi: "Keran kamar mandi bocor dan air terus mengalir.", status: "baru", prioritas: "sedang", kategori: "Kamar Mandi", created_at: "2026-05-14" },
+  { id: 3, tenant_id: 3, kamar_id: 5, judul: "Lampu mati", deskripsi: "Lampu kamar utama mati dan perlu diganti.", status: "selesai", prioritas: "rendah", kategori: "Listrik", created_at: "2026-05-08" },
+  { id: 4, tenant_id: 1, kamar_id: 1, judul: "Pintu susah dikunci", deskripsi: "Kunci pintu kamar susah diputar.", status: "baru", prioritas: "sedang", kategori: "Pintu", created_at: "2026-05-16" },
 ];
 
-export const seedAnnouncements: Announcement[] = [
-  { id: "a1", title: "Jadwal Pemadaman Listrik", content: "Akan ada pemadaman listrik pada tanggal 20 Mei 2026 pukul 08.00-12.00 WIB untuk pemeliharaan jaringan PLN.", createdAt: "2026-05-15" },
-  { id: "a2", title: "Peraturan Baru Tamu", content: "Mulai 1 Juni 2026, tamu hanya diperbolehkan berkunjung hingga pukul 21.00 WIB. Harap mematuhi peraturan ini.", createdAt: "2026-05-10" },
-  { id: "a3", title: "Pembayaran Bulan Juni", content: "Tagihan bulan Juni 2026 akan diterbitkan pada tanggal 1 Juni 2026. Harap melakukan pembayaran sebelum tanggal 10 Juni 2026.", createdAt: "2026-05-01" },
+export const seedAnnouncements: any[] = [
+  { id: 1, judul: "Jadwal Pemadaman Listrik", konten: "Akan ada pemadaman listrik pada tanggal 20 Mei 2026 pukul 08.00-12.00 WIB untuk pemeliharaan jaringan PLN.", kategori: "Informasi", prioritas: "urgent", target: "semua", created_at: "2026-05-15" },
+  { id: 2, judul: "Peraturan Baru Tamu", konten: "Mulai 1 Juni 2026, tamu hanya diperbolehkan berkunjung hingga pukul 21.00 WIB. Harap mematuhi peraturan ini.", kategori: "Peraturan", prioritas: "penting", target: "semua", created_at: "2026-05-10" },
+  { id: 3, judul: "Pembayaran Bulan Juni", konten: "Tagihan bulan Juni 2026 akan diterbitkan pada tanggal 1 Juni 2026. Harap melakukan pembayaran sebelum tanggal 10 Juni 2026.", kategori: "Pembayaran", prioritas: "info", target: "tenant", created_at: "2026-05-01" },
 ];
 
 export const seedNotifications: Notification[] = [

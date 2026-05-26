@@ -52,7 +52,7 @@ export class MaintenanceModel {
     static async findById(id: number): Promise<Maintenance | null> {
         const query = `
       SELECT m.*, 
-        t.nama as tenant_name,
+        t.nama as nama_tenant,
         t.email as tenant_email,
         t.no_telepon as tenant_phone,
         r.nomor_kamar,
@@ -143,7 +143,7 @@ export class MaintenanceModel {
         // Get maintenance requests
         const query = `
       SELECT m.*, 
-        t.nama as tenant_name,
+        t.nama as nama_tenant,
         t.email as tenant_email,
         r.nomor_kamar,
         r.tipe as tipe_kamar
@@ -330,7 +330,7 @@ export class MaintenanceModel {
     static async getUrgentRequests(): Promise<Maintenance[]> {
         const query = `
       SELECT m.*, 
-        t.nama as tenant_name,
+        t.nama as nama_tenant,
         r.nomor_kamar
       FROM maintenance m
       JOIN tenants t ON m.tenant_id = t.id

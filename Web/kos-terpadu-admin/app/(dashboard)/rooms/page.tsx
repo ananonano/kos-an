@@ -22,12 +22,12 @@ import { z } from "zod";
 import api from "@/lib/axios";
 
 const schema = z.object({
-  roomNumber: z.string().min(1, "Nomor kamar wajib diisi"),
-  type: z.string().min(1, "Tipe kamar wajib diisi"),
-  price: z.coerce.number().min(1, "Harga wajib diisi"),
-  status: z.enum(["available", "occupied", "maintenance"]),
-  description: z.string().optional(),
-  facilities: z.array(z.string()).min(1, "Pilih minimal 1 fasilitas"),
+  nomor_kamar: z.string().min(1, "Nomor kamar wajib diisi"),
+  tipe: z.string().min(1, "Tipe kamar wajib diisi"),
+  harga: z.coerce.number().min(1, "Harga wajib diisi"),
+  status: z.enum(["kosong", "terisi"]),
+  deskripsi: z.string().optional(),
+  fasilitas: z.array(z.string()).min(1, "Pilih minimal 1 fasilitas"),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -67,21 +67,28 @@ export default function RoomsPage() {
 
   const { register, handleSubmit, control, reset, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { status: "available", facilities: [] },
+    defaultValues: { status: "kosong", fasilitas: [] },
   });
 
-  const selectedFacilities = watch("facilities") || [];
+  const selectedFacilities = watch("fasilitas") || [];
 
   const filtered = rooms.filter(r => {
-    const matchSearch = r.roomNumber.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = r.nomor_kamar.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter ? r.status === statusFilter : true;
     return matchSearch && matchStatus;
   });
 
-  const openAdd = () => { setEditRoom(null); reset({ status: "available", facilities: [] }); setDialogOpen(true); };
+  const openAdd = () => { setEditRoom(null); reset({ status: "kosong", fasilitas: [] }); setDialogOpen(true); };
   const openEdit = (room: Room) => {
     setEditRoom(room);
-    reset({ roomNumber: room.roomNumber, type: room.type, price: room.price, status: room.status, description: room.description, facilities: room.facilities });
+    reset({
+      nomor_kamar: room.nomor_kamar,
+      tipe: room.tipe,
+      harga: room.harga,
+      status: room.status,
+      deskripsi: room.deskripsi,
+      fasilitas: room.fasilitas
+    });
     setDialogOpen(true);
   };
 
@@ -142,29 +149,29 @@ export default function RoomsPage() {
 
   const toggleFacility = (f: string) => {
     const current = selectedFacilities;
-    setValue("facilities", current.includes(f) ? current.filter(x => x !== f) : [...current, f]);
+    setValue("fasilitas", current.includes(f) ? current.filter(x => x !== f) : [...current, f]);
   };
 
   const columns = [
     {
-      key: "roomNumber", header: "No. Kamar", render: (r: Room) => (
+      key: "nomor_kamar", header: "No. Kamar", render: (r: Room) => (
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
             <BedDouble className="w-4 h-4 text-blue-600" />
           </div>
-          <span className="font-semibold">Kamar {r.roomNumber}</span>
+          <span className="font-semibold">Kamar {r.nomor_kamar}</span>
         </div>
       )
     },
-    { key: "price", header: "Harga/Bulan", render: (r: Room) => <span className="font-medium">{formatCurrency(r.price)}</span> },
+    { key: "harga", header: "Harga/Bulan", render: (r: Room) => <span className="font-medium">{formatCurrency(r.harga)}</span> },
     { key: "status", header: "Status", render: (r: Room) => <RoomStatusBadge status={r.status} /> },
     {
-      key: "facilities", header: "Fasilitas", render: (r: Room) => (
+      key: "fasilitas", header: "Fasilitas", render: (r: Room) => (
         <div className="flex flex-wrap gap-1 max-w-xs">
-          {r.facilities.slice(0, 3).map(f => (
+          {r.fasilitas.slice(0, 3).map(f => (
             <span key={f} className="text-xs bg-muted px-2 py-0.5 rounded-full">{f}</span>
           ))}
-          {r.facilities.length > 3 && <span className="text-xs text-muted-foreground">+{r.facilities.length - 3}</span>}
+          {r.fasilitas.length > 3 && <span className="text-xs text-muted-foreground">+{r.fasilitas.length - 3}</span>}
         </div>
       )
     },
@@ -186,10 +193,10 @@ export default function RoomsPage() {
 
       {/* Filter */}
       <div className="flex gap-3 flex-wrap">
-        {(["", "available", "occupied", "maintenance"] as const).map((s) => (
+        {(["", "kosong", "terisi"] as const).map((s) => (
           <button key={s} onClick={() => setStatusFilter(s)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${statusFilter === s ? "bg-primary text-primary-foreground shadow" : "bg-muted hover:bg-muted/80"}`}>
-            {s === "" ? "Semua" : s === "available" ? "Tersedia" : s === "occupied" ? "Terisi" : "Perbaikan"}
+            {s === "" ? "Semua" : s === "kosong" ? "Tersedia" : "Terisi"}
           </button>
         ))}
       </div>
@@ -211,18 +218,18 @@ export default function RoomsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Nomor Kamar</Label>
-                <Input {...register("roomNumber")} placeholder="101" />
-                {errors.roomNumber && <p className="text-red-500 text-xs">{errors.roomNumber.message}</p>}
+                <Input {...register("nomor_kamar")} placeholder="101" />
+                {errors.nomor_kamar && <p className="text-red-500 text-xs">{errors.nomor_kamar.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Tipe Kamar</Label>
-                <Input {...register("type")} placeholder="Standard / Deluxe / VIP" />
-                {errors.type && <p className="text-red-500 text-xs">{errors.type.message}</p>}
+                <Input {...register("tipe")} placeholder="Standard / Deluxe / VIP" />
+                {errors.tipe && <p className="text-red-500 text-xs">{errors.tipe.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Harga/Bulan (Rp)</Label>
-                <Input {...register("price")} type="number" placeholder="1500000" />
-                {errors.price && <p className="text-red-500 text-xs">{errors.price.message}</p>}
+                <Input {...register("harga")} type="number" placeholder="1500000" />
+                {errors.harga && <p className="text-red-500 text-xs">{errors.harga.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
@@ -230,9 +237,8 @@ export default function RoomsPage() {
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="available">Tersedia</SelectItem>
-                      <SelectItem value="occupied">Terisi</SelectItem>
-                      <SelectItem value="maintenance">Perbaikan</SelectItem>
+                      <SelectItem value="kosong">Tersedia</SelectItem>
+                      <SelectItem value="terisi">Terisi</SelectItem>
                     </SelectContent>
                   </Select>
                 )} />
@@ -240,7 +246,7 @@ export default function RoomsPage() {
             </div>
             <div className="space-y-2">
               <Label>Deskripsi</Label>
-              <Input {...register("description")} placeholder="Deskripsi kamar..." />
+              <Input {...register("deskripsi")} placeholder="Deskripsi kamar..." />
             </div>
             <div className="space-y-2">
               <Label>Fasilitas</Label>
@@ -252,7 +258,7 @@ export default function RoomsPage() {
                   </button>
                 ))}
               </div>
-              {errors.facilities && <p className="text-red-500 text-xs">{errors.facilities.message}</p>}
+              {errors.fasilitas && <p className="text-red-500 text-xs">{errors.fasilitas.message}</p>}
             </div>
             <div className="space-y-2">
               <Label>Foto Kamar</Label>
@@ -271,7 +277,7 @@ export default function RoomsPage() {
       </Dialog>
 
       <ConfirmDialog open={!!deleteRoom} onClose={() => setDeleteRoom(null)} onConfirm={handleDelete}
-        title="Hapus Kamar" description={`Yakin ingin menghapus kamar ${deleteRoom?.roomNumber}? Tindakan ini tidak dapat dibatalkan.`}
+        title="Hapus Kamar" description={`Yakin ingin menghapus kamar ${deleteRoom?.nomor_kamar}? Tindakan ini tidak dapat dibatalkan.`}
         confirmLabel="Hapus" isLoading={isLoading} />
     </div>
   );
