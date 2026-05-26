@@ -13,7 +13,11 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
-.md
+
+# Documentation files (keep README.md)
+*.md
+!README.md
+!**/README.md
 
 # ============================================
 # NODE.JS (Backend & Web)
