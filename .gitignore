@@ -39,19 +39,19 @@ out/
 # ============================================
 # BACKEND SPECIFIC
 # ============================================
-Web/kos-terpadu-backend/.env
-Web/kos-terpadu-backend/dist/
-Web/kos-terpadu-backend/node_modules/
-Web/kos-terpadu-backend/*.log
+Backend/.env
+Backend/dist/
+Backend/node_modules/
+Backend/*.log
 
 # ============================================
 # WEB FRONTEND SPECIFIC
 # ============================================
-Web/kos-terpadu-admin/.env.local
-Web/kos-terpadu-admin/.next/
-Web/kos-terpadu-admin/out/
-Web/kos-terpadu-admin/node_modules/
-Web/kos-terpadu-admin/.vercel
+Web/.env.local
+Web/.next/
+Web/out/
+Web/node_modules/
+Web/.vercel
 
 # ============================================
 # FLUTTER/MOBILE
