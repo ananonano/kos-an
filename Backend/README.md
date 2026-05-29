@@ -1,232 +1,176 @@
-# 🏠 KosTerpadu Backend API
+﻿# KosTerpadu Backend API
 
-Backend REST API untuk sistem manajemen kos terpadu menggunakan Express.js + TypeScript + PostgreSQL + Firebase.
+**Shared backend untuk Web Admin dan Mobile App**
 
-## 📋 Table of Contents
+Backend REST API untuk aplikasi manajemen kos terpadu berbasis cloud. Backend ini melayani:
+- **Web Admin** (Next.js) - Dashboard admin untuk manage data
+- **Mobile App** (Flutter) - Aplikasi mobile untuk penghuni dan admin
 
-- [Tech Stack](#tech-stack)
-- [Features](#features)
-- [Project Structure](#project-structure)
-- [Setup & Installation](#setup--installation)
-- [Database Setup](#database-setup)
-- [API Endpoints](#api-endpoints)
-- [Deployment](#deployment)
-- [Team Collaboration](#team-collaboration)
+## Tech Stack
 
----
-
-## 🛠️ Tech Stack
-
-- **Runtime:** Node.js 18+
+- **Runtime:** Node.js
 - **Framework:** Express.js
+- **Database:** PostgreSQL
+- **Authentication:** JWT (JSON Web Token)
 - **Language:** TypeScript
-- **Database:** PostgreSQL (Cloud SQL)
-- **Realtime DB:** Firebase Firestore
-- **Storage:** Firebase Storage / Cloud Storage
-- **Authentication:** JWT (JSON Web Tokens)
-- **Validation:** express-validator
-- **Security:** helmet, cors, bcryptjs
-- **File Upload:** multer
+- **ORM:** Native PostgreSQL queries with pg library
 
----
+## Features
 
-## ✨ Features
+- Authentication & Authorization (JWT)
+- Role-based access control (Admin & Tenant)
+- Complete CRUD operations for all entities
+- Pagination & filtering
+- File upload support
+- Transaction support
+- Statistics & reporting
+- 57+ REST API endpoints
 
-### Core Features
-- ✅ JWT Authentication & Authorization
-- ✅ Role-based Access Control (Admin/Tenant)
-- ✅ RESTful API Design
-- ✅ Input Validation
-- ✅ Error Handling
-- ✅ Rate Limiting
-- ✅ CORS Configuration
-- ✅ File Upload (Images)
+## Prerequisites
 
-### Business Features
-- ✅ User Management (Admin & Tenant)
-- ✅ Room Management (CRUD)
-- ✅ Tenant Management (CRUD)
-- ✅ Contract Management
-- ✅ Bill Generation & Management
-- ✅ Payment Processing & Verification
-- ✅ Maintenance Request Management
-- ✅ Announcement System
-- ✅ Dashboard Statistics
+- Node.js v18 or higher
+- PostgreSQL v14 or higher
+- npm or yarn
 
----
+## Installation
 
-## 📂 Project Structure
-
-```
-backend/
-├── src/
-│   ├── config/
-│   │   ├── database.ts          # PostgreSQL connection
-│   │   ├── firebase.ts          # Firebase Admin SDK
-│   │   ├── migrate.ts           # Database migration script
-│   │   └── seed.ts              # Database seeding script
-│   │
-│   ├── models/                  # Database models
-│   │   ├── user.model.ts
-│   │   ├── room.model.ts
-│   │   ├── tenant.model.ts
-│   │   ├── contract.model.ts
-│   │   ├── bill.model.ts
-│   │   ├── payment.model.ts
-│   │   ├── maintenance.model.ts
-│   │   ├── announcement.model.ts
-│   │   └── index.ts
-│   │
-│   ├── controllers/             # Request handlers
-│   │   ├── auth.controller.ts
-│   │   ├── room.controller.ts
-│   │   ├── tenant.controller.ts
-│   │   ├── bill.controller.ts
-│   │   ├── payment.controller.ts
-│   │   ├── maintenance.controller.ts
-│   │   ├── announcement.controller.ts
-│   │   └── dashboard.controller.ts
-│   │
-│   ├── middleware/              # Express middleware
-│   │   ├── auth.middleware.ts   # JWT verification
-│   │   ├── error.middleware.ts  # Error handling
-│   │   └── upload.middleware.ts # File upload
-│   │
-│   ├── routes/                  # API routes
-│   │   ├── auth.routes.ts
-│   │   ├── room.routes.ts
-│   │   ├── tenant.routes.ts
-│   │   ├── bill.routes.ts
-│   │   ├── payment.routes.ts
-│   │   ├── maintenance.routes.ts
-│   │   ├── announcement.routes.ts
-│   │   ├── dashboard.routes.ts
-│   │   └── index.ts
-│   │
-│   ├── types/                   # TypeScript types
-│   │   └── index.ts
-│   │
-│   └── index.ts                 # App entry point
-│
-├── .env.example                 # Environment variables template
-├── .gitignore
-├── package.json
-├── tsconfig.json
-└── README.md
-```
-
----
-
-## 🚀 Setup & Installation
-
-### Prerequisites
-- Node.js 18+ & npm
-- PostgreSQL 14+
-- Firebase Project (for Firestore & Storage)
-
-### 1. Clone & Install
-
+1. Navigate to backend directory:
 ```bash
-cd backend
+cd Backend
+```
+
+2. Install dependencies:
+```bash
 npm install
 ```
 
-### 2. Environment Variables
-
-Copy `.env.example` to `.env`:
-
+3. Create `.env` file:
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env`:
-
+4. Configure environment variables in `.env`:
 ```env
-# Server
 PORT=5000
 NODE_ENV=development
 
-# PostgreSQL
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=kos_terpadu
-DB_USER=postgres
-DB_PASSWORD=your_password
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_NAME=kos_terpadu
+DATABASE_USER=postgres
+DATABASE_PASSWORD=your_password
 
-# JWT
-JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
+JWT_SECRET=your_jwt_secret_key_here
 JWT_EXPIRES_IN=7d
 
-# Firebase Admin SDK
-FIREBASE_PROJECT_ID=your_project_id
-FIREBASE_PRIVATE_KEY_ID=your_private_key_id
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nyour_private_key\n-----END PRIVATE KEY-----\n"
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your_project.iam.gserviceaccount.com
-FIREBASE_CLIENT_ID=your_client_id
-FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-
-# CORS
-CORS_ORIGIN=http://localhost:3000
+CLOUD_STORAGE_BUCKET=your_bucket_name
 ```
 
-### 3. Database Setup
+## Database Setup
 
-Create PostgreSQL database:
-
-```bash
-createdb kos_terpadu
-```
-
-Or using psql:
-
+1. Create PostgreSQL database:
 ```sql
 CREATE DATABASE kos_terpadu;
 ```
 
-### 4. Run Migration
-
+2. Run migrations:
 ```bash
-npm run db:migrate
+npm run migrate
 ```
 
-This will create all tables:
-- users
-- rooms
-- tenants
-- contracts
-- bills
-- payments
-- maintenance
-- announcements
-
-### 5. Seed Database (Optional)
-
+3. Seed database with dummy data (optional):
 ```bash
-npm run db:seed
+npm run seed
 ```
 
-This will create dummy data for testing.
+## Running the Application
 
-**Default Credentials:**
-- Admin: `admin@kosterpadu.com` / `admin123`
-- Tenant: `budi@email.com` / `tenant123`
-
-### 6. Run Development Server
-
+### Development Mode
 ```bash
 npm run dev
 ```
 
-Server will run on `http://localhost:5000`
+### Production Mode
+```bash
+npm run build
+npm start
+```
 
----
+### Other Commands
+```bash
+npm run lint          # Run ESLint
+npm run format        # Format code with Prettier
+npm run type-check    # TypeScript type checking
+```
 
-## 🗄️ Database Setup
+## Project Structure
 
-### PostgreSQL Schema
+```
+src/
+├── config/           # Configuration files
+│   ├── database.ts   # Database connection
+│   ├── migrate.ts    # Migration script
+│   └── seed.ts       # Seed script
+├── controllers/      # Request handlers
+│   ├── auth.controller.ts
+│   ├── room.controller.ts
+│   ├── tenant.controller.ts
+│   ├── bill.controller.ts
+│   ├── payment.controller.ts
+│   ├── maintenance.controller.ts
+│   ├── announcement.controller.ts
+│   └── dashboard.controller.ts
+├── models/           # Database models
+│   ├── user.model.ts
+│   ├── room.model.ts
+│   ├── tenant.model.ts
+│   ├── contract.model.ts
+│   ├── bill.model.ts
+│   ├── payment.model.ts
+│   ├── maintenance.model.ts
+│   └── announcement.model.ts
+├── routes/           # API routes
+│   ├── auth.routes.ts
+│   ├── room.routes.ts
+│   ├── tenant.routes.ts
+│   ├── bill.routes.ts
+│   ├── payment.routes.ts
+│   ├── maintenance.routes.ts
+│   ├── announcement.routes.ts
+│   ├── dashboard.routes.ts
+│   └── index.ts
+├── middleware/       # Express middleware
+│   ├── auth.middleware.ts
+│   ├── error.middleware.ts
+│   └── upload.middleware.ts
+├── types/            # TypeScript types
+│   └── index.ts
+├── utils/            # Utility functions
+│   └── helpers.ts
+└── index.ts          # Application entry point
+```
 
-**8 Main Tables:**
+## API Documentation
 
+See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for complete API reference.
+
+**Base URL:** `http://localhost:5000/api`
+
+**Total Endpoints:** 57+
+
+### Main Endpoints:
+- `/api/auth` - Authentication (5 endpoints)
+- `/api/rooms` - Room management (6 endpoints)
+- `/api/tenants` - Tenant management (6 endpoints)
+- `/api/bills` - Bill management (8 endpoints)
+- `/api/payments` - Payment management (9 endpoints)
+- `/api/maintenance` - Maintenance requests (9 endpoints)
+- `/api/announcements` - Announcements (9 endpoints)
+- `/api/dashboard` - Dashboard statistics (5 endpoints)
+
+## Database Schema
+
+### SQL Tables (8 tables):
 1. **users** - User accounts (admin & tenant)
 2. **rooms** - Room information
 3. **tenants** - Tenant details
@@ -236,288 +180,89 @@ Server will run on `http://localhost:5000`
 7. **maintenance** - Maintenance requests
 8. **announcements** - System announcements
 
-### Firebase Firestore Collections
+## Authentication
 
-**5 Collections for Realtime Data:**
+All protected endpoints require JWT token in Authorization header:
 
-1. **chats** - Chat rooms
-2. **messages** - Chat messages (subcollection)
-3. **notifications** - User notifications
-4. **maintenance_status** - Realtime maintenance updates
-5. **activity_logs** - Activity tracking
-
-### Firebase Storage
-
-**File Storage:**
-- `/maintenance/{id}/` - Maintenance photos
-- `/payments/{id}/` - Payment proofs
-- `/users/{id}/` - Profile pictures
-
----
-
-## 📡 API Endpoints
-
-### Base URL
 ```
-Development: http://localhost:5000/api
-Production: https://your-backend-url.com/api
+Authorization: Bearer <your_jwt_token>
 ```
 
-### Authentication
+### Default Admin Account (after seeding):
+- Email: `admin@kosterpadu.com`
+- Password: `admin123`
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/auth/register` | Register new user | - |
-| POST | `/auth/login` | Login user | - |
-| POST | `/auth/logout` | Logout user | ✅ |
-| GET | `/auth/me` | Get current user | ✅ |
-| PUT | `/auth/profile/:id` | Update profile | ✅ |
+### Default Tenant Account (after seeding):
+- Email: `tenant1@example.com`
+- Password: `password123`
 
-### Rooms
+## Testing with Postman
 
-| Method | Endpoint | Description | Auth | Role |
-|--------|----------|-------------|------|------|
-| GET | `/rooms` | Get all rooms | - | - |
-| GET | `/rooms/:id` | Get room by ID | - | - |
-| POST | `/rooms` | Create room | ✅ | Admin |
-| PUT | `/rooms/:id` | Update room | ✅ | Admin |
-| DELETE | `/rooms/:id` | Delete room | ✅ | Admin |
+1. Import the Postman collection (if available)
+2. Set environment variables:
+   - `base_url`: `http://localhost:5000/api`
+   - `token`: Your JWT token after login
 
-### Tenants
+3. Test authentication:
+   - POST `/auth/login` to get token
+   - Use token in subsequent requests
 
-| Method | Endpoint | Description | Auth | Role |
-|--------|----------|-------------|------|------|
-| GET | `/tenants` | Get all tenants | ✅ | Admin |
-| GET | `/tenants/:id` | Get tenant by ID | ✅ | Admin/Owner |
-| POST | `/tenants` | Create tenant | ✅ | Admin |
-| PUT | `/tenants/:id` | Update tenant | ✅ | Admin |
-| DELETE | `/tenants/:id` | Delete tenant | ✅ | Admin |
+## Deployment
 
-### Bills
+### Deploy to Google Cloud Run
 
-| Method | Endpoint | Description | Auth | Role |
-|--------|----------|-------------|------|------|
-| GET | `/bills` | Get all bills | ✅ | Admin/Owner |
-| GET | `/bills/:id` | Get bill by ID | ✅ | Admin/Owner |
-| POST | `/bills` | Create bill | ✅ | Admin |
-| POST | `/bills/generate` | Generate monthly bills | ✅ | Admin |
-| PUT | `/bills/:id` | Update bill | ✅ | Admin |
-| DELETE | `/bills/:id` | Delete bill | ✅ | Admin |
-
-### Payments
-
-| Method | Endpoint | Description | Auth | Role |
-|--------|----------|-------------|------|------|
-| GET | `/payments` | Get all payments | ✅ | Admin/Owner |
-| GET | `/payments/:id` | Get payment by ID | ✅ | Admin/Owner |
-| POST | `/payments` | Create payment | ✅ | Tenant |
-| PUT | `/payments/:id/verify` | Verify payment | ✅ | Admin |
-| PUT | `/payments/:id/reject` | Reject payment | ✅ | Admin |
-| POST | `/payments/:id/upload` | Upload proof | ✅ | Tenant |
-
-### Maintenance
-
-| Method | Endpoint | Description | Auth | Role |
-|--------|----------|-------------|------|------|
-| GET | `/maintenance` | Get all requests | ✅ | Admin/Owner |
-| GET | `/maintenance/:id` | Get request by ID | ✅ | Admin/Owner |
-| POST | `/maintenance` | Create request | ✅ | Tenant |
-| PUT | `/maintenance/:id` | Update status | ✅ | Admin |
-| DELETE | `/maintenance/:id` | Delete request | ✅ | Admin |
-
-### Announcements
-
-| Method | Endpoint | Description | Auth | Role |
-|--------|----------|-------------|------|------|
-| GET | `/announcements` | Get all announcements | ✅ | All |
-| GET | `/announcements/:id` | Get announcement by ID | ✅ | All |
-| POST | `/announcements` | Create announcement | ✅ | Admin |
-| PUT | `/announcements/:id` | Update announcement | ✅ | Admin |
-| DELETE | `/announcements/:id` | Delete announcement | ✅ | Admin |
-
-### Dashboard
-
-| Method | Endpoint | Description | Auth | Role |
-|--------|----------|-------------|------|------|
-| GET | `/dashboard/stats` | Get statistics | ✅ | Admin |
-| GET | `/dashboard/revenue` | Get revenue data | ✅ | Admin |
-| GET | `/dashboard/occupancy` | Get occupancy rate | ✅ | Admin |
-
-**Total: 40+ Endpoints** ✅
-
----
-
-## 🚢 Deployment
-
-### Deploy to Cloud Run (Docker)
-
-1. **Create Dockerfile:**
-
-```dockerfile
-FROM node:18-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci --only=production
-
-COPY . .
-RUN npm run build
-
-EXPOSE 5000
-
-CMD ["npm", "start"]
-```
-
-2. **Build & Deploy:**
-
+1. Build Docker image:
 ```bash
-# Build Docker image
-gcloud builds submit --tag gcr.io/PROJECT_ID/kos-backend
+docker build -t kos-terpadu-backend .
+```
 
-# Deploy to Cloud Run
-gcloud run deploy kos-backend \
-  --image gcr.io/PROJECT_ID/kos-backend \
+2. Push to Google Container Registry:
+```bash
+docker tag kos-terpadu-backend gcr.io/YOUR_PROJECT_ID/kos-terpadu-backend
+docker push gcr.io/YOUR_PROJECT_ID/kos-terpadu-backend
+```
+
+3. Deploy to Cloud Run:
+```bash
+gcloud run deploy kos-terpadu-backend \
+  --image gcr.io/YOUR_PROJECT_ID/kos-terpadu-backend \
   --platform managed \
   --region asia-southeast2 \
-  --allow-unauthenticated \
-  --set-env-vars="NODE_ENV=production"
+  --allow-unauthenticated
 ```
 
-3. **Connect to Cloud SQL:**
+### Database on Cloud SQL
 
-Add Cloud SQL connection in Cloud Run:
+1. Create Cloud SQL instance (PostgreSQL)
+2. Update `.env` with Cloud SQL connection details
+3. Use Cloud SQL Proxy for local development
 
-```bash
---add-cloudsql-instances=PROJECT_ID:REGION:INSTANCE_NAME
-```
+## Environment Variables
 
-Update `.env`:
+| Variable | Description | Example |
+|----------|-------------|---------|
+| PORT | Server port | 5000 |
+| NODE_ENV | Environment | development/production |
+| DATABASE_HOST | PostgreSQL host | localhost |
+| DATABASE_PORT | PostgreSQL port | 5432 |
+| DATABASE_NAME | Database name | kos_terpadu |
+| DATABASE_USER | Database user | postgres |
+| DATABASE_PASSWORD | Database password | your_password |
+| JWT_SECRET | JWT secret key | random_secret_key |
+| JWT_EXPIRES_IN | Token expiration | 7d |
+| CLOUD_STORAGE_BUCKET | GCS bucket name | kos-terpadu-files |
 
-```env
-DB_HOST=/cloudsql/PROJECT_ID:REGION:INSTANCE_NAME
-```
+## Contributing
 
----
+1. Create feature branch
+2. Make changes
+3. Test thoroughly
+4. Submit pull request
 
-## 👥 Team Collaboration
+## License
 
-### For Backend Developer
+Private - Academic Project
 
-**Your Tasks:**
-1. ✅ Complete all controllers (use models yang udah ada)
-2. ✅ Add input validation (express-validator)
-3. ✅ Test all endpoints (Postman/Thunder Client)
-4. ✅ Write API documentation
-5. ✅ Setup Firebase Admin SDK
-6. ✅ Deploy to Cloud Run
+## Contact
 
-**Priority Order:**
-1. Auth endpoints (login, register)
-2. Room & Tenant CRUD
-3. Bill & Payment flow
-4. Maintenance requests
-5. Dashboard statistics
-
-### For Web Frontend Developer
-
-**What You Need:**
-- Base URL: `http://localhost:5000/api`
-- Auth: JWT token in `Authorization: Bearer <token>` header
-- All endpoints documented above
-- Response format: `{ success: boolean, message: string, data: any }`
-
-**Start With:**
-1. Login page
-2. Dashboard (statistics)
-3. Room management
-4. Tenant management
-5. Payment verification
-
-### For Mobile Developer
-
-**What You Need:**
-- Same API as Web (shared backend)
-- Firebase SDK for realtime features
-- Image upload for maintenance photos
-- Push notifications (optional)
-
-**Start With:**
-1. Login/Register
-2. Room list
-3. Bill list
-4. Payment upload
-5. Maintenance request
-
-### For DevOps
-
-**Your Tasks:**
-1. Setup Cloud SQL (PostgreSQL)
-2. Setup Firebase project
-3. Deploy backend to Cloud Run
-4. Deploy web to App Engine
-5. Setup CI/CD (Cloud Build)
-6. Configure domain & SSL
-
----
-
-## 📝 Notes
-
-### Security
-- All passwords hashed with bcrypt
-- JWT tokens expire in 7 days
-- Rate limiting: 100 req/15min
-- CORS configured for allowed origins
-- Input validation on all endpoints
-
-### Performance
-- Database indexes on foreign keys
-- Connection pooling (max 20)
-- Pagination on list endpoints
-- Efficient queries with JOINs
-
-### Best Practices
-- TypeScript for type safety
-- Modular architecture (MVC)
-- Error handling middleware
-- Consistent response format
-- Environment variables for config
-
----
-
-## 🆘 Troubleshooting
-
-### Database Connection Error
-```bash
-# Check PostgreSQL is running
-pg_isready
-
-# Check connection string
-psql -h localhost -U postgres -d kos_terpadu
-```
-
-### Migration Failed
-```bash
-# Drop and recreate database
-dropdb kos_terpadu
-createdb kos_terpadu
-npm run db:migrate
-```
-
-### Port Already in Use
-```bash
-# Kill process on port 5000
-lsof -ti:5000 | xargs kill -9
-```
-
----
-
-## 📞 Support
-
-- **Backend Lead:** [Your Name]
-- **Documentation:** `/docs` folder
-- **API Testing:** Postman collection available
-
----
-
-**Built with ❤️ for TCC Practicum Project**
+For questions or issues, contact the development team.

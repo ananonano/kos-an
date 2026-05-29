@@ -17,7 +17,10 @@ class _SplashViewState extends State<SplashView> {
   @override
   void initState() {
     super.initState();
-    _checkAuth();
+    // Use addPostFrameCallback to avoid calling during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAuth();
+    });
   }
   
   Future<void> _checkAuth() async {

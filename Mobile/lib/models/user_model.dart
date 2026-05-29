@@ -26,10 +26,12 @@ class UserModel {
     return UserModel(
       id: json['id'].toString(),
       email: json['email'],
-      nama: json['name'] ?? json['nama'], // Backend pakai 'name'
+      // Backend transform 'nama' jadi 'name' untuk compatibility, tapi kita handle both
+      nama: json['nama'] ?? json['name'] ?? '',
       role: json['role'],
-      noTelepon: json['phone'] ?? json['no_telepon'], // Backend pakai 'phone'
-      foto: json['avatar'] ?? json['foto'], // Backend pakai 'avatar'
+      // Backend transform 'no_telepon' jadi 'phone' untuk compatibility, tapi kita handle both
+      noTelepon: json['no_telepon'] ?? json['phone'],
+      foto: json['foto'],
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
     );
@@ -40,10 +42,10 @@ class UserModel {
     return {
       'id': id,
       'email': email,
-      'name': nama, // Backend pakai 'name'
+      'nama': nama, // Backend pakai 'nama'
       'role': role,
-      'phone': noTelepon, // Backend pakai 'phone'
-      'avatar': foto, // Backend pakai 'avatar'
+      'no_telepon': noTelepon, // Backend pakai 'no_telepon'
+      'foto': foto, // Backend pakai 'foto'
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };

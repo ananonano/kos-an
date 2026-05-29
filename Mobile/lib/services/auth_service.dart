@@ -19,6 +19,11 @@ class AuthService {
         includeAuth: false,
       );
       
+      // Backend response format: { "success": true, "message": "...", "token": "...", "user": {...} }
+      if (response['success'] != true) {
+        throw Exception(response['message'] ?? 'Login gagal');
+      }
+      
       // Save token
       await StorageService.saveString(
         AppConstants.tokenKey,
@@ -26,7 +31,9 @@ class AuthService {
       );
       
       // Save user data
-      final user = UserModel.fromJson(response['user']);
+      // Backend return user dengan field 'name' dan 'phone' (transformed), tapi kita tetap simpan sebagai 'nama' dan 'no_telepon'
+      final userData = response['user'];
+      final user = UserModel.fromJson(userData);
       await StorageService.saveObject(AppConstants.userKey, user.toJson());
       await StorageService.saveString(AppConstants.roleKey, user.role);
       
@@ -51,10 +58,15 @@ class AuthService {
           'password': password,
           'nama': nama,
           'no_telepon': noTelepon,
-          'role': AppConstants.rolePenghuni, // Default role penghuni
+          'role': 'tenant', // Default role tenant
         },
         includeAuth: false,
       );
+      
+      // Backend response format: { "success": true, "message": "...", "token": "...", "user": {...} }
+      if (response['success'] != true) {
+        throw Exception(response['message'] ?? 'Register gagal');
+      }
       
       // Save token
       await StorageService.saveString(
@@ -63,7 +75,8 @@ class AuthService {
       );
       
       // Save user data
-      final user = UserModel.fromJson(response['user']);
+      final userData = response['user'];
+      final user = UserModel.fromJson(userData);
       await StorageService.saveObject(AppConstants.userKey, user.toJson());
       await StorageService.saveString(AppConstants.roleKey, user.role);
       
@@ -126,11 +139,16 @@ class AuthService {
       if (foto != null) body['foto'] = foto;
       
       final response = await HttpService.put(
-        '${AppConfig.authEndpoint}/profile/$userId',
+        '${AppConfig.authEndpoint}/profile', // Backend endpoint: PUT /api/auth/profile
         body: body,
       );
       
-      final user = UserModel.fromJson(response['user']);
+      // Backend response format: { "success": true, "message": "...", "data": {...} }
+      if (response['success'] != true) {
+        throw Exception(response['message'] ?? 'Update profile gagal');
+      }
+      
+      final user = UserModel.fromJson(response['data']);
       await StorageService.saveObject(AppConstants.userKey, user.toJson());
       
       return user;

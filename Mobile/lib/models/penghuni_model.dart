@@ -1,50 +1,64 @@
 /// Penghuni Model (Tenant)
-/// Model untuk data penghuni kos - sesuai backend schema
+/// Model untuk data penghuni kos - sesuai dengan tabel tenants di PostgreSQL
 class PenghuniModel {
   final String id;
-  final String userId;
-  final String kamarId;
-  final DateTime tanggalMasuk; // start_date
-  final DateTime? tanggalKeluar; // end_date
-  final String status; // 'active' atau 'inactive'
+  final String? userId; // Bisa null
+  final String? kamarId; // Bisa null
+  final String nama;
+  final String email;
+  final String noTelepon;
+  final String? alamatAsal;
+  final String? pekerjaan;
+  final String? kontakDarurat;
+  final DateTime? tanggalMasuk;
+  final DateTime? tanggalKeluar;
+  final String status; // 'aktif' atau 'tidak_aktif'
   final DateTime createdAt;
   final DateTime updatedAt;
   
   // Relations (optional, dari join query)
   final String? nomorKamar;
-  final String? namaUser;
-  final String? emailUser;
   
   PenghuniModel({
     required this.id,
-    required this.userId,
-    required this.kamarId,
-    required this.tanggalMasuk,
+    this.userId,
+    this.kamarId,
+    required this.nama,
+    required this.email,
+    required this.noTelepon,
+    this.alamatAsal,
+    this.pekerjaan,
+    this.kontakDarurat,
+    this.tanggalMasuk,
     this.tanggalKeluar,
     required this.status,
     required this.createdAt,
     required this.updatedAt,
     this.nomorKamar,
-    this.namaUser,
-    this.emailUser,
   });
   
   // From JSON
   factory PenghuniModel.fromJson(Map<String, dynamic> json) {
     return PenghuniModel(
       id: json['id'].toString(),
-      userId: json['user_id'].toString(),
-      kamarId: json['room_id']?.toString() ?? json['kamar_id']?.toString() ?? '',
-      tanggalMasuk: DateTime.parse(json['start_date'] ?? json['tanggal_masuk']),
-      tanggalKeluar: json['end_date'] != null || json['tanggal_keluar'] != null
-          ? DateTime.parse(json['end_date'] ?? json['tanggal_keluar']) 
+      userId: json['user_id']?.toString(),
+      kamarId: json['kamar_id']?.toString(),
+      nama: json['nama'],
+      email: json['email'],
+      noTelepon: json['no_telepon'],
+      alamatAsal: json['alamat_asal'],
+      pekerjaan: json['pekerjaan'],
+      kontakDarurat: json['kontak_darurat'],
+      tanggalMasuk: json['tanggal_masuk'] != null 
+          ? DateTime.parse(json['tanggal_masuk']) 
+          : null,
+      tanggalKeluar: json['tanggal_keluar'] != null 
+          ? DateTime.parse(json['tanggal_keluar']) 
           : null,
       status: json['status'],
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
-      nomorKamar: json['room_number'] ?? json['nomor_kamar'],
-      namaUser: json['user_name'] ?? json['nama'],
-      emailUser: json['user_email'] ?? json['email'],
+      nomorKamar: json['nomor_kamar'], // Dari JOIN dengan rooms
     );
   }
   
@@ -53,12 +67,30 @@ class PenghuniModel {
     return {
       'id': id,
       'user_id': userId,
-      'room_id': kamarId,
-      'start_date': tanggalMasuk.toIso8601String().split('T')[0], // Date only
-      'end_date': tanggalKeluar?.toIso8601String().split('T')[0],
+      'kamar_id': kamarId,
+      'nama': nama,
+      'email': email,
+      'no_telepon': noTelepon,
+      'alamat_asal': alamatAsal,
+      'pekerjaan': pekerjaan,
+      'kontak_darurat': kontakDarurat,
+      'tanggal_masuk': tanggalMasuk?.toIso8601String().split('T')[0],
+      'tanggal_keluar': tanggalKeluar?.toIso8601String().split('T')[0],
       'status': status,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
+  }
+  
+  // Helper untuk status label
+  String get statusLabel {
+    switch (status) {
+      case 'aktif':
+        return 'Aktif';
+      case 'tidak_aktif':
+        return 'Tidak Aktif';
+      default:
+        return status;
+    }
   }
 }

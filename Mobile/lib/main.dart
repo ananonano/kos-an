@@ -11,6 +11,9 @@ import 'controllers/penghuni_controller.dart';
 import 'controllers/pembayaran_controller.dart';
 import 'controllers/keluhan_controller.dart';
 import 'controllers/chat_controller.dart';
+import 'controllers/bill_controller.dart';
+import 'controllers/payment_controller.dart';
+import 'controllers/announcement_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +34,7 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +46,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PembayaranController()),
         ChangeNotifierProvider(create: (_) => KeluhanController()),
         ChangeNotifierProvider(create: (_) => ChatController()),
+        ChangeNotifierProvider(create: (_) => BillController()),
+        ChangeNotifierProvider(create: (_) => PaymentController()),
+        ChangeNotifierProvider(create: (_) => AnnouncementController()),
       ],
       child: MaterialApp(
         title: 'Kos Terpadu',

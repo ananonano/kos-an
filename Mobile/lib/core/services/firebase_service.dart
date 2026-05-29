@@ -2,14 +2,35 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../config/app_config.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 /// Firebase Service
 /// Mengelola operasi Firebase (Firestore, Storage, Auth)
 class FirebaseService {
-  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  static final FirebaseStorage _storage = FirebaseStorage.instance;
-  static final FirebaseAuth _auth = FirebaseAuth.instance;
+  // Lazy initialization - only access Firebase when needed
+  static FirebaseFirestore get _firestore {
+    _checkFirebaseInitialized();
+    return FirebaseFirestore.instance;
+  }
+  
+  static FirebaseStorage get _storage {
+    _checkFirebaseInitialized();
+    return FirebaseStorage.instance;
+  }
+  
+  static FirebaseAuth get _auth {
+    _checkFirebaseInitialized();
+    return FirebaseAuth.instance;
+  }
+  
+  // Check if Firebase is initialized
+  static void _checkFirebaseInitialized() {
+    try {
+      Firebase.app();
+    } catch (e) {
+      throw Exception('Firebase belum diinisialisasi. Fitur Firebase (Chat & Keluhan) tidak tersedia.');
+    }
+  }
   
   // ==================== FIRESTORE ====================
   

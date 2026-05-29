@@ -1,30 +1,44 @@
-/// Maintenance Report Model (Keluhan/Laporan Kerusakan)
-/// Model untuk data laporan kerusakan - sesuai backend schema
+/// Maintenance Model (Keluhan/Perbaikan)
+/// Model untuk data maintenance - sesuai dengan tabel maintenance di PostgreSQL
 class MaintenanceModel {
   final String id;
   final String tenantId;
-  final String title;
-  final String description;
-  final String status; // 'pending', 'in_progress', 'completed'
+  final String kamarId;
+  final String judul;
+  final String deskripsi;
+  final String kategori; // AC, Listrik, Air, dll
+  final String prioritas; // 'rendah', 'sedang', 'tinggi', 'urgent'
+  final String status; // 'baru', 'diproses', 'selesai', 'ditolak'
+  final List<String>? foto; // Array foto dari JSONB
+  final DateTime tanggalLapor;
+  final DateTime? tanggalSelesai;
+  final String? komentarAdmin;
+  final double? biaya;
   final DateTime createdAt;
   final DateTime updatedAt;
   
   // Relations (optional, dari join query)
-  final String? tenantName;
-  final String? roomNumber;
-  final List<MaintenanceProgress>? progressList;
+  final String? namaTenant;
+  final String? nomorKamar;
   
   MaintenanceModel({
     required this.id,
     required this.tenantId,
-    required this.title,
-    required this.description,
+    required this.kamarId,
+    required this.judul,
+    required this.deskripsi,
+    required this.kategori,
+    required this.prioritas,
     required this.status,
+    this.foto,
+    required this.tanggalLapor,
+    this.tanggalSelesai,
+    this.komentarAdmin,
+    this.biaya,
     required this.createdAt,
     required this.updatedAt,
-    this.tenantName,
-    this.roomNumber,
-    this.progressList,
+    this.namaTenant,
+    this.nomorKamar,
   });
   
   // From JSON
@@ -32,18 +46,23 @@ class MaintenanceModel {
     return MaintenanceModel(
       id: json['id'].toString(),
       tenantId: json['tenant_id'].toString(),
-      title: json['title'],
-      description: json['description'],
+      kamarId: json['kamar_id'].toString(),
+      judul: json['judul'],
+      deskripsi: json['deskripsi'],
+      kategori: json['kategori'],
+      prioritas: json['prioritas'],
       status: json['status'],
+      foto: json['foto'] != null ? List<String>.from(json['foto']) : null,
+      tanggalLapor: DateTime.parse(json['tanggal_lapor']),
+      tanggalSelesai: json['tanggal_selesai'] != null 
+          ? DateTime.parse(json['tanggal_selesai']) 
+          : null,
+      komentarAdmin: json['komentar_admin'],
+      biaya: json['biaya'] != null ? double.parse(json['biaya'].toString()) : null,
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
-      tenantName: json['tenant_name'],
-      roomNumber: json['room_number'],
-      progressList: json['progress'] != null
-          ? (json['progress'] as List)
-              .map((p) => MaintenanceProgress.fromJson(p))
-              .toList()
-          : null,
+      namaTenant: json['nama_tenant'],
+      nomorKamar: json['nomor_kamar'],
     );
   }
   
@@ -52,9 +71,17 @@ class MaintenanceModel {
     return {
       'id': id,
       'tenant_id': tenantId,
-      'title': title,
-      'description': description,
+      'kamar_id': kamarId,
+      'judul': judul,
+      'deskripsi': deskripsi,
+      'kategori': kategori,
+      'prioritas': prioritas,
       'status': status,
+      'foto': foto,
+      'tanggal_lapor': tanggalLapor.toIso8601String().split('T')[0],
+      'tanggal_selesai': tanggalSelesai?.toIso8601String().split('T')[0],
+      'komentar_admin': komentarAdmin,
+      'biaya': biaya,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -63,54 +90,32 @@ class MaintenanceModel {
   // Helper untuk status label
   String get statusLabel {
     switch (status) {
-      case 'pending':
-        return 'Menunggu';
-      case 'in_progress':
-        return 'Sedang Dikerjakan';
-      case 'completed':
+      case 'baru':
+        return 'Baru';
+      case 'diproses':
+        return 'Diproses';
+      case 'selesai':
         return 'Selesai';
+      case 'ditolak':
+        return 'Ditolak';
       default:
         return status;
     }
   }
-}
-
-/// Maintenance Progress Model
-/// Model untuk progress/update dari maintenance report
-class MaintenanceProgress {
-  final String id;
-  final String reportId;
-  final String description;
-  final String? image;
-  final DateTime createdAt;
   
-  MaintenanceProgress({
-    required this.id,
-    required this.reportId,
-    required this.description,
-    this.image,
-    required this.createdAt,
-  });
-  
-  // From JSON
-  factory MaintenanceProgress.fromJson(Map<String, dynamic> json) {
-    return MaintenanceProgress(
-      id: json['id'].toString(),
-      reportId: json['report_id'].toString(),
-      description: json['description'],
-      image: json['image'],
-      createdAt: DateTime.parse(json['created_at']),
-    );
-  }
-  
-  // To JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'report_id': reportId,
-      'description': description,
-      'image': image,
-      'created_at': createdAt.toIso8601String(),
-    };
+  // Helper untuk prioritas label
+  String get prioritasLabel {
+    switch (prioritas) {
+      case 'rendah':
+        return 'Rendah';
+      case 'sedang':
+        return 'Sedang';
+      case 'tinggi':
+        return 'Tinggi';
+      case 'urgent':
+        return 'Urgent';
+      default:
+        return prioritas;
+    }
   }
 }

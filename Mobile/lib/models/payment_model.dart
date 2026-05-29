@@ -1,29 +1,27 @@
-/// Pembayaran Model (Payment)
+/// Payment Model (Pembayaran)
 /// Model untuk data pembayaran - sesuai dengan tabel payments di PostgreSQL
-class PembayaranModel {
+class PaymentModel {
   final String id;
-  final String billId;
+  final String tagihanId;
   final String tenantId;
   final double jumlah;
   final DateTime tanggalBayar;
-  final String metodePembayaran; // transfer, cash, dll
+  final String metodePembayaran; // 'transfer', 'tunai', 'e-wallet'
   final String? buktiPembayaran; // URL foto bukti
   final String status; // 'menunggu_verifikasi', 'lunas', 'ditolak'
   final String? keterangan;
-  final String? verifiedBy; // ID admin yang verifikasi
-  final DateTime? verifiedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
-  
+
   // Relations (optional, dari join query)
   final String? namaTenant;
   final String? nomorKamar;
-  final String? bulan;
-  final int? tahun;
-  
-  PembayaranModel({
+  final String? bulanTagihan;
+  final int? tahunTagihan;
+
+  PaymentModel({
     required this.id,
-    required this.billId,
+    required this.tagihanId,
     required this.tenantId,
     required this.jumlah,
     required this.tanggalBayar,
@@ -31,21 +29,19 @@ class PembayaranModel {
     this.buktiPembayaran,
     required this.status,
     this.keterangan,
-    this.verifiedBy,
-    this.verifiedAt,
     required this.createdAt,
     required this.updatedAt,
     this.namaTenant,
     this.nomorKamar,
-    this.bulan,
-    this.tahun,
+    this.bulanTagihan,
+    this.tahunTagihan,
   });
-  
+
   // From JSON
-  factory PembayaranModel.fromJson(Map<String, dynamic> json) {
-    return PembayaranModel(
+  factory PaymentModel.fromJson(Map<String, dynamic> json) {
+    return PaymentModel(
       id: json['id'].toString(),
-      billId: json['bill_id'].toString(),
+      tagihanId: json['tagihan_id'].toString(),
       tenantId: json['tenant_id'].toString(),
       jumlah: double.parse(json['jumlah'].toString()),
       tanggalBayar: DateTime.parse(json['tanggal_bayar']),
@@ -53,24 +49,20 @@ class PembayaranModel {
       buktiPembayaran: json['bukti_pembayaran'],
       status: json['status'],
       keterangan: json['keterangan'],
-      verifiedBy: json['verified_by']?.toString(),
-      verifiedAt: json['verified_at'] != null 
-          ? DateTime.parse(json['verified_at']) 
-          : null,
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
       namaTenant: json['nama_tenant'],
       nomorKamar: json['nomor_kamar'],
-      bulan: json['bulan'],
-      tahun: json['tahun'],
+      bulanTagihan: json['bulan_tagihan'],
+      tahunTagihan: json['tahun_tagihan'],
     );
   }
-  
+
   // To JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'bill_id': billId,
+      'tagihan_id': tagihanId,
       'tenant_id': tenantId,
       'jumlah': jumlah,
       'tanggal_bayar': tanggalBayar.toIso8601String().split('T')[0],
@@ -78,19 +70,11 @@ class PembayaranModel {
       'bukti_pembayaran': buktiPembayaran,
       'status': status,
       'keterangan': keterangan,
-      'verified_by': verifiedBy,
-      'verified_at': verifiedAt?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
   }
-  
-  // Helper untuk format periode (jika ada data bulan/tahun)
-  String? get periode {
-    if (bulan == null || tahun == null) return null;
-    return '$bulan $tahun';
-  }
-  
+
   // Helper untuk status label
   String get statusLabel {
     switch (status) {
@@ -104,4 +88,35 @@ class PembayaranModel {
         return status;
     }
   }
+
+  // Helper untuk metode pembayaran label
+  String get metodePembayaranLabel {
+    switch (metodePembayaran) {
+      case 'transfer':
+        return 'Transfer Bank';
+      case 'tunai':
+        return 'Tunai';
+      case 'e-wallet':
+        return 'E-Wallet';
+      default:
+        return metodePembayaran;
+    }
+  }
+
+  // Helper untuk periode tagihan
+  String get periodeTagihan {
+    if (bulanTagihan != null && tahunTagihan != null) {
+      return '$bulanTagihan $tahunTagihan';
+    }
+    return '-';
+  }
+
+  // Helper untuk check apakah pending
+  bool get isPending => status == 'menunggu_verifikasi';
+
+  // Helper untuk check apakah sudah lunas
+  bool get isLunas => status == 'lunas';
+
+  // Helper untuk check apakah ditolak
+  bool get isDitolak => status == 'ditolak';
 }

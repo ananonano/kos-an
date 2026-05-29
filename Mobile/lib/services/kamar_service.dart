@@ -18,8 +18,8 @@ class KamarService {
       if (limit != null) queryParams['limit'] = limit.toString();
       
       final response = await HttpService.get(
-        AppConfig.kamarEndpoint,
-        queryParams: queryPar
+        AppConfig.roomsEndpoint,
+        queryParams: queryParams,
       );
       
       final List<dynamic> data = response['data'];
@@ -32,7 +32,7 @@ class KamarService {
   // Get Kamar by ID
   static Future<KamarModel> getKamarById(String id) async {
     try {
-      final response = await HttpService.get('${AppConfig.kamarEndpoint}/$id');
+      final response = await HttpService.get('${AppConfig.roomsEndpoint}/$id');
       return KamarModel.fromJson(response['data']);
     } catch (e) {
       throw Exception('Gagal mengambil detail kamar: ${e.toString()}');
@@ -49,7 +49,7 @@ class KamarService {
   }) async {
     try {
       final response = await HttpService.post(
-        AppConfig.kamarEndpoint,
+        AppConfig.roomsEndpoint,
         body: {
           'nomor_kamar': nomorKamar,
           'tipe': tipe,
@@ -86,7 +86,7 @@ class KamarService {
       if (fasilitas != null) body['fasilitas'] = fasilitas;
       
       final response = await HttpService.put(
-        '${AppConfig.kamarEndpoint}/$id',
+        '${AppConfig.roomsEndpoint}/$id',
         body: body,
       );
       
@@ -99,7 +99,7 @@ class KamarService {
   // Delete Kamar (Admin only)
   static Future<void> deleteKamar(String id) async {
     try {
-      await HttpService.delete('${AppConfig.kamarEndpoint}/$id');
+      await HttpService.delete('${AppConfig.roomsEndpoint}/$id');
     } catch (e) {
       throw Exception('Gagal menghapus kamar: ${e.toString()}');
     }

@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.kosterpadu.kos_terpadu"
+    namespace = "com.example.flutter_tcc"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
