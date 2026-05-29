@@ -1,10 +1,7 @@
 ﻿# KosTerpadu Backend API
 
-**Shared backend untuk Web Admin dan Mobile App**
-
-Backend REST API untuk aplikasi manajemen kos terpadu berbasis cloud. Backend ini melayani:
-- **Web Admin** (Next.js) - Dashboard admin untuk manage data
-- **Mobile App** (Flutter) - Aplikasi mobile untuk penghuni dan admin
+Backend REST API untuk aplikasi manajemen kos terpadu berbasis cloud.
+**Shared backend untuk Web Admin dan Mobile App.**
 
 ## Tech Stack
 
