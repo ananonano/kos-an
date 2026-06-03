@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../controllers/payment_controller.dart';
 import '../../controllers/auth_controller.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/app_drawer.dart';
 
 /// Payment History View
 /// Tampilan riwayat pembayaran tenant
@@ -31,12 +32,12 @@ class _PaymentHistoryViewState extends State<PaymentHistoryView> with SingleTick
   }
   
   Future<void> _loadPayments() async {
-    final authController = context.read<AuthController>();
     final paymentController = context.read<PaymentController>();
     
-    if (authController.currentUser != null) {
-      await paymentController.getPaymentHistory(tenantId: authController.currentUser!.id.toString());
-    }
+    // Backend will auto-filter based on user role
+    // Admin: gets all payments
+    // Tenant: gets only their payments
+    await paymentController.getPaymentHistory();
   }
   
   @override
@@ -44,6 +45,14 @@ class _PaymentHistoryViewState extends State<PaymentHistoryView> with SingleTick
     return Scaffold(
       appBar: AppBar(
         title: const Text('Riwayat Pembayaran'),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
+        ),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -53,6 +62,7 @@ class _PaymentHistoryViewState extends State<PaymentHistoryView> with SingleTick
           ],
         ),
       ),
+      drawer: const AppDrawer(),
       body: Consumer<PaymentController>(
         builder: (context, paymentController, child) {
           if (paymentController.isLoading) {
@@ -143,23 +153,19 @@ class _PaymentHistoryViewState extends State<PaymentHistoryView> with SingleTick
     
     Color statusColor;
     IconData statusIcon;
-    String statusText;
     
     switch (payment.status) {
       case 'lunas':
         statusColor = Colors.green;
         statusIcon = Icons.check_circle;
-        statusText = 'LUNAS';
         break;
       case 'ditolak':
         statusColor = Colors.red;
         statusIcon = Icons.cancel;
-        statusText = 'DITOLAK';
         break;
       default:
         statusColor = Colors.orange;
         statusIcon = Icons.pending;
-        statusText = 'MENUNGGU';
     }
     
     return Card(
@@ -169,17 +175,21 @@ class _PaymentHistoryViewState extends State<PaymentHistoryView> with SingleTick
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header: ID & Status
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  currencyFormat.format(payment.jumlah),
-                  style: AppTheme.heading3,
+                  '#${payment.id}',
+                  style: AppTheme.caption.copyWith(
+                    fontFamily: 'monospace',
+                    color: Colors.grey,
+                  ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -187,7 +197,7 @@ class _PaymentHistoryViewState extends State<PaymentHistoryView> with SingleTick
                       Icon(statusIcon, size: 16, color: statusColor),
                       const SizedBox(width: 4),
                       Text(
-                        statusText,
+                        payment.statusLabel,
                         style: TextStyle(
                           color: statusColor,
                           fontWeight: FontWeight.bold,
@@ -200,75 +210,142 @@ class _PaymentHistoryViewState extends State<PaymentHistoryView> with SingleTick
               ],
             ),
             const SizedBox(height: 12),
+            
+            // Penghuni (jika ada)
+            if (payment.namaTenant != null) ...[
+              Row(
+                children: [
+                  const Icon(Icons.person, size: 20, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      payment.namaTenant!,
+                      style: AppTheme.bodyText1.copyWith(fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+            
+            // Tagihan (Periode)
+            if (payment.bulanTagihan != null && payment.tahunTagihan != null) ...[
+              Row(
+                children: [
+                  const Icon(Icons.receipt, size: 20, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Tagihan: ${payment.bulanTagihan} ${payment.tahunTagihan}',
+                    style: AppTheme.bodyText2,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+            
+            // Jumlah
             Row(
               children: [
-                const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+                const Icon(Icons.attach_money, size: 20, color: Colors.grey),
                 const SizedBox(width: 8),
                 Text(
-                  'Tanggal: ${dateFormat.format(payment.tanggalBayar)}',
+                  currencyFormat.format(payment.jumlah),
+                  style: AppTheme.bodyText1.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            
+            // Tanggal Bayar
+            Row(
+              children: [
+                const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
+                const SizedBox(width: 8),
+                Text(
+                  'Tgl Bayar: ${dateFormat.format(payment.tanggalBayar)}',
                   style: AppTheme.bodyText2.copyWith(color: Colors.grey),
                 ),
               ],
             ),
             const SizedBox(height: 8),
+            
+            // Metode Pembayaran
             Row(
               children: [
-                const Icon(Icons.payment, size: 18, color: Colors.grey),
+                const Icon(Icons.payment, size: 20, color: Colors.grey),
                 const SizedBox(width: 8),
                 Text(
-                  'Metode: ${payment.metodePembayaran}',
+                  'Metode: ${payment.metodePembayaranLabel}',
                   style: AppTheme.bodyText2.copyWith(color: Colors.grey),
                 ),
               ],
             ),
+            
+            // Keterangan (jika ada)
             if (payment.keterangan != null && payment.keterangan!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.note, size: 18, color: Colors.grey),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      payment.keterangan!,
-                      style: AppTheme.caption.copyWith(color: Colors.grey),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.note, size: 16, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        payment.keterangan!,
+                        style: AppTheme.caption.copyWith(color: Colors.grey.shade700),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
-            if (payment.verifiedAt != null) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(
-                    payment.status == 'lunas' ? Icons.verified : Icons.info_outline,
-                    size: 18,
-                    color: statusColor,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Diverifikasi: ${dateFormat.format(payment.verifiedAt!)}',
-                    style: AppTheme.caption.copyWith(color: statusColor),
-                  ),
-                ],
-              ),
-            ],
+            
+            // Bukti Pembayaran (jika ada)
             if (payment.buktiPembayaran != null) ...[
               const SizedBox(height: 12),
-              TextButton.icon(
-                onPressed: () {
+              InkWell(
+                onTap: () {
                   // TODO: Show image viewer
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Lihat bukti pembayaran')),
+                    SnackBar(
+                      content: Text('Bukti: ${payment.buktiPembayaran}'),
+                      duration: const Duration(seconds: 2),
+                    ),
                   );
                 },
-                icon: const Icon(Icons.image, size: 18),
-                label: const Text('Lihat Bukti Pembayaran'),
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.image, size: 18, color: Colors.blue.shade700),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Lihat Bukti Pembayaran',
+                        style: TextStyle(
+                          color: Colors.blue.shade700,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

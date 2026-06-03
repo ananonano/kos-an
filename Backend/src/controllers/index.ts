@@ -6,3 +6,4 @@ export { PaymentController } from './payment.controller';
 export { MaintenanceController } from './maintenance.controller';
 export { AnnouncementController } from './announcement.controller';
 export { DashboardController } from './dashboard.controller';
+export { NotificationController } from './notification.controller';

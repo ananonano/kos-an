@@ -19,6 +19,9 @@ class HttpService {
       final token = StorageService.getString(AppConstants.tokenKey);
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
+        print('🔑 [HttpService] Token: ${token.substring(0, token.length > 20 ? 20 : token.length)}...');
+      } else {
+        print('⚠️ [HttpService] No token found in storage');
       }
     }
     
@@ -193,6 +196,12 @@ class HttpService {
   // Handle Response
   static Map<String, dynamic> _handleResponse(http.Response response) {
     final statusCode = response.statusCode;
+    
+    // DEBUG
+    print('📡 [HttpService] Status Code: $statusCode');
+    if (statusCode != 200) {
+      print('📦 [HttpService] Response Body: ${response.body}');
+    }
     
     if (statusCode >= 200 && statusCode < 300) {
       // Success

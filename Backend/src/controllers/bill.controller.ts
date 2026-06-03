@@ -5,15 +5,47 @@ export class BillController {
   /**
    * Get all bills with pagination and filters
    * Query params: page, limit, tenant_id, status, bulan, tahun, search
+   * AUTOMATIC FILTERING: If user is tenant, only return their bills
    */
   static async getAll(req: Request, res: Response) {
     try {
       const { page, limit, tenant_id, status, bulan, tahun, search } = req.query;
+      const user = (req as any).user; // From auth middleware
+
+      let finalTenantId = tenant_id ? parseInt(tenant_id as string) : undefined;
+
+      // 🔒 AUTO-FILTER: If user is tenant, override tenant_id with their own
+      if (user && user.role === 'tenant') {
+        // Get tenant_id from tenants table based on user_id
+        const { pool } = await import('../config/database');
+        const tenantResult = await pool.query(
+          'SELECT id FROM tenants WHERE user_id = $1 LIMIT 1',
+          [user.id]
+        );
+        
+        if (tenantResult.rows.length > 0) {
+          finalTenantId = tenantResult.rows[0].id;
+          console.log(`🔒 [BillController] Auto-filtering for tenant user_id=${user.id} → tenant_id=${finalTenantId}`);
+        } else {
+          console.warn(`⚠️ [BillController] Tenant user_id=${user.id} not found in tenants table`);
+          // Return empty result if tenant not found
+          return res.json({
+            success: true,
+            data: [],
+            pagination: {
+              page: parseInt(page as string) || 1,
+              limit: parseInt(limit as string) || 20,
+              total: 0,
+              totalPages: 0
+            }
+          });
+        }
+      }
 
       const result = await BillModel.findAll({
         page: page ? parseInt(page as string) : 1,
         limit: limit ? parseInt(limit as string) : 20,
-        tenant_id: tenant_id ? parseInt(tenant_id as string) : undefined,
+        tenant_id: finalTenantId,
         status: status as any,
         bulan: bulan as string,
         tahun: tahun ? parseInt(tahun as string) : undefined,
@@ -266,6 +298,54 @@ export class BillController {
       return res.status(500).json({
         success: false,
         message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Generate bills for all tenants based on their tanggal_masuk
+   * Admin only - recommended method
+   */
+  static async generateForAllTenants(req: Request, res: Response) {
+    try {
+      const results = await BillModel.generateBillsForAllTenants();
+
+      const totalBillsCreated = results.reduce((sum, r) => sum + r.bills_created, 0);
+
+      return res.status(201).json({
+        success: true,
+        message: `${totalBillsCreated} tagihan berhasil dibuat untuk ${results.length} penghuni`,
+        data: results
+      });
+    } catch (error) {
+      console.error('Generate bills for all tenants error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Generate bills for specific tenant based on tanggal_masuk
+   * Admin only
+   */
+  static async generateForTenant(req: Request, res: Response) {
+    try {
+      const { tenantId } = req.params;
+
+      const bills = await BillModel.generateBillsForTenant(parseInt(tenantId));
+
+      return res.status(201).json({
+        success: true,
+        message: `${bills.length} tagihan berhasil dibuat`,
+        data: bills
+      });
+    } catch (error) {
+      console.error('Generate bills for tenant error:', error);
+      return res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'Internal server error'
       });
     }
   }

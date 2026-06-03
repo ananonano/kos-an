@@ -156,4 +156,26 @@ class AuthService {
       throw Exception('Update profile gagal: ${e.toString()}');
     }
   }
+  
+  // Get Admin User (for chat with admin)
+  static Future<Map<String, dynamic>> getAdminUser() async {
+    try {
+      final response = await HttpService.get(
+        '${AppConfig.usersEndpoint}?role=admin&limit=1',
+      );
+      
+      if (response['success'] != true) {
+        throw Exception(response['message'] ?? 'Gagal mengambil data admin');
+      }
+      
+      final List<dynamic> data = response['data'] ?? [];
+      if (data.isEmpty) {
+        throw Exception('Admin tidak ditemukan');
+      }
+      
+      return data.first as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception('Gagal mengambil data admin: ${e.toString()}');
+    }
+  }
 }

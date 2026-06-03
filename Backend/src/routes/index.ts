@@ -7,6 +7,7 @@ import paymentRoutes from "./payment.routes";
 import billRoutes from "./bill.routes";
 import maintenanceRoutes from "./maintenance.routes";
 import announcementRoutes from "./announcement.routes";
+import notificationRoutes from "./notification.routes";
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use("/payments", paymentRoutes);
 router.use("/bills", billRoutes);
 router.use("/maintenance", maintenanceRoutes);
 router.use("/announcements", announcementRoutes);
+router.use("/notifications", notificationRoutes);
 
 export default router;

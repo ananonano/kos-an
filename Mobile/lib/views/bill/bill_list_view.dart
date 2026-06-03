@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../controllers/bill_controller.dart';
 import '../../controllers/auth_controller.dart';
+import '../../services/tenant_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../routes/app_routes.dart';
+import '../../widgets/app_drawer.dart';
 
 /// Bill List View
 /// Tampilan daftar tagihan untuk tenant
@@ -32,13 +34,12 @@ class _BillListViewState extends State<BillListView> with SingleTickerProviderSt
   }
   
   Future<void> _loadBills() async {
-    final authController = context.read<AuthController>();
     final billController = context.read<BillController>();
     
-    if (authController.currentUser != null) {
-      // Use getAllBills instead of getBillsByTenant
-      await billController.getAllBills(tenantId: authController.currentUser!.id.toString());
-    }
+    // Backend will auto-filter based on user role
+    // Admin: gets all bills
+    // Tenant: gets only their bills
+    await billController.getAllBills();
   }
   
   @override
@@ -46,6 +47,14 @@ class _BillListViewState extends State<BillListView> with SingleTickerProviderSt
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tagihan Saya'),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
+        ),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -55,6 +64,7 @@ class _BillListViewState extends State<BillListView> with SingleTickerProviderSt
           ],
         ),
       ),
+      drawer: const AppDrawer(),
       body: Consumer<BillController>(
         builder: (context, billController, child) {
           if (billController.isLoading) {
@@ -170,6 +180,7 @@ class _BillListViewState extends State<BillListView> with SingleTickerProviderSt
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header: Periode & Status
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -180,7 +191,7 @@ class _BillListViewState extends State<BillListView> with SingleTickerProviderSt
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -188,7 +199,7 @@ class _BillListViewState extends State<BillListView> with SingleTickerProviderSt
                         Icon(statusIcon, size: 16, color: statusColor),
                         const SizedBox(width: 4),
                         Text(
-                          bill.status.toUpperCase(),
+                          bill.statusLabel,
                           style: TextStyle(
                             color: statusColor,
                             fontWeight: FontWeight.bold,
@@ -201,16 +212,55 @@ class _BillListViewState extends State<BillListView> with SingleTickerProviderSt
                 ],
               ),
               const SizedBox(height: 12),
+              
+              // Penghuni
+              if (bill.namaTenant != null) ...[
+                Row(
+                  children: [
+                    const Icon(Icons.person, size: 20, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        bill.namaTenant!,
+                        style: AppTheme.bodyText1.copyWith(fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+              
+              // Kamar
+              if (bill.nomorKamar != null) ...[
+                Row(
+                  children: [
+                    const Icon(Icons.meeting_room, size: 20, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Kamar ${bill.nomorKamar}',
+                      style: AppTheme.bodyText2,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+              
+              // Jumlah
               Row(
                 children: [
                   const Icon(Icons.attach_money, size: 20, color: Colors.grey),
                   const SizedBox(width: 8),
                   Text(
-                    'Jumlah: ${currencyFormat.format(bill.jumlah)}',
-                    style: AppTheme.bodyText1.copyWith(fontWeight: FontWeight.bold),
+                    currencyFormat.format(bill.jumlah),
+                    style: AppTheme.bodyText1.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                 ],
               ),
+              
+              // Denda (jika ada)
               if (bill.denda != null && bill.denda > 0) ...[
                 const SizedBox(height: 8),
                 Row(
@@ -224,24 +274,48 @@ class _BillListViewState extends State<BillListView> with SingleTickerProviderSt
                   ],
                 ),
               ],
+              
               const SizedBox(height: 8),
+              
+              // Jatuh Tempo
               Row(
                 children: [
                   const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
                   const SizedBox(width: 8),
                   Text(
                     'Jatuh Tempo: ${dateFormat.format(bill.jatuhTempo)}',
-                    style: AppTheme.bodyText2.copyWith(color: Colors.grey),
+                    style: AppTheme.bodyText2.copyWith(
+                      color: bill.isOverdue ? Colors.red : Colors.grey,
+                      fontWeight: bill.isOverdue ? FontWeight.w600 : FontWeight.normal,
+                    ),
                   ),
                 ],
               ),
+              
+              // Catatan (jika ada)
               if (bill.catatan != null && bill.catatan!.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                Text(
-                  bill.catatan!,
-                  style: AppTheme.caption.copyWith(color: Colors.grey),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.note, size: 16, color: Colors.grey),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          bill.catatan!,
+                          style: AppTheme.caption.copyWith(color: Colors.grey.shade700),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ],

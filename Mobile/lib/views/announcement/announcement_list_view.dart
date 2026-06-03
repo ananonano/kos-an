@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../controllers/announcement_controller.dart';
 import '../../core/theme/app_theme.dart';
 import '../../routes/app_routes.dart';
+import '../../widgets/app_drawer.dart';
 
 /// Announcement List View
 /// Tampilan daftar pengumuman
@@ -31,7 +32,16 @@ class _AnnouncementListViewState extends State<AnnouncementListView> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pengumuman'),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
+        ),
       ),
+      drawer: const AppDrawer(),
       body: Consumer<AnnouncementController>(
         builder: (context, announcementController, child) {
           if (announcementController.isLoading) {
@@ -99,19 +109,23 @@ class _AnnouncementListViewState extends State<AnnouncementListView> {
     
     Color priorityColor;
     IconData priorityIcon;
+    String priorityBadge;
     
     switch (announcement.prioritas) {
-      case 'tinggi':
+      case 'urgent':
         priorityColor = Colors.red;
         priorityIcon = Icons.warning;
+        priorityBadge = 'Urgent';
         break;
-      case 'sedang':
+      case 'penting':
         priorityColor = Colors.orange;
         priorityIcon = Icons.priority_high;
+        priorityBadge = 'Penting';
         break;
       default:
         priorityColor = Colors.blue;
         priorityIcon = Icons.info;
+        priorityBadge = 'Info';
     }
     
     return Card(
@@ -130,15 +144,35 @@ class _AnnouncementListViewState extends State<AnnouncementListView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header: Icon & Badge
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: priorityColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(priorityIcon, color: priorityColor, size: 24),
+                  Stack(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.campaign, color: Colors.blue.shade700, size: 24),
+                      ),
+                      // Unread badge (dot indicator)
+                      if (!announcement.isRead)
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -147,21 +181,41 @@ class _AnnouncementListViewState extends State<AnnouncementListView> {
                       children: [
                         Row(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: priorityColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                announcement.prioritasLabel,
-                                style: TextStyle(
-                                  color: priorityColor,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
+                            if (announcement.prioritas == 'urgent' || announcement.prioritas == 'penting') ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: priorityColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  priorityBadge,
+                                  style: TextStyle(
+                                    color: priorityColor,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                            ],
+                            if (announcement.kategori != null) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade200,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  announcement.kategori!,
+                                  style: TextStyle(
+                                    color: Colors.grey.shade700,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                         const SizedBox(height: 4),
@@ -175,20 +229,49 @@ class _AnnouncementListViewState extends State<AnnouncementListView> {
                 ],
               ),
               const SizedBox(height: 12),
+              
+              // Judul with bold if unread
               Text(
                 announcement.judul,
-                style: AppTheme.heading3,
+                style: AppTheme.heading3.copyWith(
+                  fontSize: 16,
+                  fontWeight: announcement.isRead ? FontWeight.normal : FontWeight.bold,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 8),
+              
+              // Konten
               Text(
-                announcement.isi,
-                style: AppTheme.bodyText2.copyWith(color: Colors.grey[700]),
+                announcement.konten,
+                style: AppTheme.bodyText2.copyWith(color: Colors.grey.shade700),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
+              
+              // Target (jika ada)
+              if (announcement.target != null && announcement.target != 'semua') ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.people, size: 14, color: Colors.grey.shade600),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Target: ${announcement.target}',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 11,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              
               const SizedBox(height: 12),
+              
+              // Read more
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [

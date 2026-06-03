@@ -41,7 +41,7 @@ class PaymentModel {
   factory PaymentModel.fromJson(Map<String, dynamic> json) {
     return PaymentModel(
       id: json['id'].toString(),
-      tagihanId: json['tagihan_id'].toString(),
+      tagihanId: json['bill_id'].toString(),
       tenantId: json['tenant_id'].toString(),
       jumlah: double.parse(json['jumlah'].toString()),
       tanggalBayar: DateTime.parse(json['tanggal_bayar']),
@@ -53,8 +53,8 @@ class PaymentModel {
       updatedAt: DateTime.parse(json['updated_at']),
       namaTenant: json['nama_tenant'],
       nomorKamar: json['nomor_kamar'],
-      bulanTagihan: json['bulan_tagihan'],
-      tahunTagihan: json['tahun_tagihan'],
+      bulanTagihan: json['bulan'],
+      tahunTagihan: json['tahun'] != null ? int.tryParse(json['tahun'].toString()) : null,
     );
   }
 

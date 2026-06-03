@@ -7,10 +7,10 @@ class AppConfig {
   // Untuk test di device fisik: http://192.168.x.x:5000/api (ganti dengan IP komputer)
   // 
   // PENTING: Pastikan device dan komputer terhubung ke WiFi yang sama!
-  // IP komputer kamu: 192.168.31.97 (Updated!)
+  // IP komputer kamu: 192.168.100.144 (Updated - Warkop baru!)
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.31.97:5000/api', // ✅ IP komputer di jaringan WiFi
+    defaultValue: 'http://192.168.100.144:5000/api', // ✅ IP komputer di jaringan WiFi
   );
   
   static String get baseUrl => apiBaseUrl;

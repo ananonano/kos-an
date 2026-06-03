@@ -1,15 +1,42 @@
 ﻿import { Request, Response } from 'express';
-import { AnnouncementModel } from '../models';
+import { AnnouncementModel, NotificationModel } from '../models';
 
 export class AnnouncementController {
   /**
    * Get all announcements with pagination and filters
    * Query params: page, limit, kategori, prioritas, target, is_active, search
+   * Includes read/unread status for authenticated user
    */
   static async getAll(req: Request, res: Response) {
     try {
       const { page, limit, kategori, prioritas, target, is_active, search } = req.query;
+      const userId = (req as any).user?.id;
 
+      // If user is authenticated, get announcements with read status
+      if (userId) {
+        const result = await AnnouncementModel.findAllWithReadStatus(userId, {
+          page: page ? parseInt(page as string) : 1,
+          limit: limit ? parseInt(limit as string) : 20,
+          kategori: kategori as string,
+          prioritas: prioritas as any,
+          target: target as any,
+          is_active: is_active === 'true' ? true : is_active === 'false' ? false : undefined,
+          search: search as string
+        });
+
+        return res.json({
+          success: true,
+          data: result.announcements,
+          pagination: {
+            page: parseInt(page as string) || 1,
+            limit: parseInt(limit as string) || 20,
+            total: result.total,
+            totalPages: Math.ceil(result.total / (parseInt(limit as string) || 20))
+          }
+        });
+      }
+
+      // If not authenticated, use the old method without read status
       const result = await AnnouncementModel.findAll({
         page: page ? parseInt(page as string) : 1,
         limit: limit ? parseInt(limit as string) : 20,
@@ -101,6 +128,7 @@ export class AnnouncementController {
   /**
    * Create new announcement
    * Admin only
+   * Also creates notifications for all tenants
    */
   static async create(req: Request, res: Response) {
     try {
@@ -122,6 +150,19 @@ export class AnnouncementController {
         target,
         created_by: createdBy
       });
+
+      // Create notifications for tenants
+      // Get all tenant user IDs
+      const tenantUserIds = await NotificationModel.getAllTenantUserIds();
+      
+      if (tenantUserIds.length > 0) {
+        await NotificationModel.createForMultipleUsers(tenantUserIds, {
+          title: '📢 Pengumuman Baru',
+          message: `${judul}`,
+          type: 'announcement',
+          related_id: announcement.id
+        });
+      }
 
       return res.status(201).json({
         success: true,
@@ -286,6 +327,61 @@ export class AnnouncementController {
       });
     } catch (error) {
       console.error('Get statistics error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Mark announcement as read
+   * User marks an announcement they've opened
+   */
+  static async markAsRead(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const userId = (req as any).user.id;
+
+      const announcement = await AnnouncementModel.findById(parseInt(id));
+      if (!announcement) {
+        return res.status(404).json({
+          success: false,
+          message: 'Pengumuman tidak ditemukan'
+        });
+      }
+
+      await AnnouncementModel.markAsRead(parseInt(id), userId);
+
+      return res.json({
+        success: true,
+        message: 'Pengumuman ditandai telah dibaca'
+      });
+    } catch (error) {
+      console.error('Mark as read error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
+   * Get unread announcement count for current user
+   * Returns count of announcements not yet read
+   */
+  static async getUnreadCount(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user.id;
+
+      const count = await AnnouncementModel.getUnreadCount(userId);
+
+      return res.json({
+        success: true,
+        data: { unread_count: count }
+      });
+    } catch (error) {
+      console.error('Get unread count error:', error);
       return res.status(500).json({
         success: false,
         message: 'Internal server error'

@@ -54,7 +54,8 @@ class PaymentController extends ChangeNotifier {
   
   // Create Payment
   Future<bool> createPayment({
-    required String tagihanId,
+    required String billId,
+    required int tenantId,
     required double jumlah,
     required String metodePembayaran,
     String? buktiPembayaran,
@@ -66,7 +67,8 @@ class PaymentController extends ChangeNotifier {
       notifyListeners();
       
       await PaymentService.createPayment(
-        tagihanId: tagihanId,
+        billId: billId,
+        tenantId: tenantId,
         jumlah: jumlah,
         metodePembayaran: metodePembayaran,
         buktiPembayaran: buktiPembayaran,

@@ -1,5 +1,4 @@
 import '../core/services/http_service.dart';
-import '../core/config/app_config.dart';
 import '../models/payment_model.dart';
 
 /// Payment Service
@@ -18,7 +17,7 @@ class PaymentService {
       if (penghuniId != null) queryParams['penghuni_id'] = penghuniId;
 
       final response = await HttpService.get(
-        '${AppConfig.apiBaseUrl}$_endpoint',
+        _endpoint,
         queryParams: queryParams,
       );
 
@@ -37,7 +36,7 @@ class PaymentService {
   static Future<PaymentModel> getPaymentById(String id) async {
     try {
       final response = await HttpService.get(
-        '${AppConfig.apiBaseUrl}$_endpoint/$id',
+        '$_endpoint/$id',
       );
 
       if (response['success'] != true) {
@@ -52,30 +51,44 @@ class PaymentService {
 
   // Create Payment
   static Future<PaymentModel> createPayment({
-    required String tagihanId,
+    required String billId,
+    required int tenantId,
     required double jumlah,
     required String metodePembayaran,
     String? buktiPembayaran,
     String? keterangan,
   }) async {
     try {
+      print('📤 [PaymentService] Creating payment...');
+      print('  bill_id: $billId');
+      print('  tenant_id: $tenantId');
+      print('  jumlah: $jumlah');
+      print('  metode_pembayaran: $metodePembayaran');
+      
       final response = await HttpService.post(
-        '${AppConfig.apiBaseUrl}$_endpoint',
+        _endpoint,
         body: {
-          'tagihan_id': tagihanId,
+          'bill_id': billId,
+          'tenant_id': tenantId,
           'jumlah': jumlah,
+          'tanggal_bayar': DateTime.now().toIso8601String(),
           'metode_pembayaran': metodePembayaran,
           if (buktiPembayaran != null) 'bukti_pembayaran': buktiPembayaran,
           if (keterangan != null) 'keterangan': keterangan,
         },
       );
 
+      print('📥 [PaymentService] Response: ${response['success']}');
+
       if (response['success'] != true) {
+        print('❌ [PaymentService] Error: ${response['message']}');
         throw Exception(response['message'] ?? 'Gagal membuat pembayaran');
       }
 
+      print('✅ [PaymentService] Payment created successfully');
       return PaymentModel.fromJson(response['data']);
     } catch (e) {
+      print('❌ [PaymentService] Exception: $e');
       throw Exception('Gagal membuat pembayaran: ${e.toString()}');
     }
   }
@@ -89,7 +102,7 @@ class PaymentService {
       // TODO: Implement file upload using multipart
       // For now, just update with image path
       final response = await HttpService.put(
-        '${AppConfig.apiBaseUrl}$_endpoint/$paymentId',
+        '$_endpoint/$paymentId',
         body: {
           'bukti_pembayaran': imagePath,
         },
@@ -113,7 +126,7 @@ class PaymentService {
   }) async {
     try {
       final response = await HttpService.put(
-        '${AppConfig.apiBaseUrl}$_endpoint/$id',
+        '$_endpoint/$id',
         body: {
           'status': status,
           if (keterangan != null) 'keterangan': keterangan,
@@ -134,7 +147,7 @@ class PaymentService {
   static Future<void> deletePayment(String id) async {
     try {
       final response = await HttpService.delete(
-        '${AppConfig.apiBaseUrl}$_endpoint/$id',
+        '$_endpoint/$id',
       );
 
       if (response['success'] != true) {

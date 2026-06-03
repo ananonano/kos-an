@@ -153,6 +153,16 @@ export class DashboardController {
   static async getRecentActivities(req: Request, res: Response) {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const user = (req as any).user;
+
+      // For admin, get all recent activities
+      // For tenant, this endpoint should not be used (use getTenantOverview instead)
+      if (user && user.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Akses ditolak. Endpoint ini hanya untuk admin.'
+        });
+      }
 
       const billsResult = await BillModel.findAll({ limit });
       const paymentsResult = await PaymentModel.findAll({ limit });
@@ -172,7 +182,8 @@ export class DashboardController {
       console.error('Get recent activities error:', error);
       return res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }

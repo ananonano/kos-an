@@ -1,26 +1,26 @@
-/// Maintenance Model (Keluhan/Perbaikan)
-/// Model untuk data maintenance - sesuai dengan tabel maintenance di PostgreSQL
+/// Maintenance Model (Keluhan)
 class MaintenanceModel {
   final String id;
-  final String tenantId;
-  final String kamarId;
+  final int tenantId;
+  final int kamarId;
   final String judul;
   final String deskripsi;
-  final String kategori; // AC, Listrik, Air, dll
-  final String prioritas; // 'rendah', 'sedang', 'tinggi', 'urgent'
-  final String status; // 'baru', 'diproses', 'selesai', 'ditolak'
-  final List<String>? foto; // Array foto dari JSONB
-  final DateTime tanggalLapor;
-  final DateTime? tanggalSelesai;
+  final String kategori;
+  final String prioritas; // rendah, sedang, tinggi, urgent
+  final String status; // baru, diproses, selesai, ditolak
+  final List<String>? foto;
   final String? komentarAdmin;
   final double? biaya;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime tanggalLapor;
+  final DateTime? tanggalSelesai;
   
-  // Relations (optional, dari join query)
+  // Joined fields
   final String? namaTenant;
+  final String? tenantEmail;
+  final String? tenantPhone;
   final String? nomorKamar;
-  
+  final String? tipeKamar;
+
   MaintenanceModel({
     required this.id,
     required this.tenantId,
@@ -31,42 +31,48 @@ class MaintenanceModel {
     required this.prioritas,
     required this.status,
     this.foto,
-    required this.tanggalLapor,
-    this.tanggalSelesai,
     this.komentarAdmin,
     this.biaya,
-    required this.createdAt,
-    required this.updatedAt,
+    required this.tanggalLapor,
+    this.tanggalSelesai,
     this.namaTenant,
+    this.tenantEmail,
+    this.tenantPhone,
     this.nomorKamar,
+    this.tipeKamar,
   });
-  
-  // From JSON
+
   factory MaintenanceModel.fromJson(Map<String, dynamic> json) {
     return MaintenanceModel(
       id: json['id'].toString(),
-      tenantId: json['tenant_id'].toString(),
-      kamarId: json['kamar_id'].toString(),
-      judul: json['judul'],
-      deskripsi: json['deskripsi'],
-      kategori: json['kategori'],
-      prioritas: json['prioritas'],
-      status: json['status'],
-      foto: json['foto'] != null ? List<String>.from(json['foto']) : null,
-      tanggalLapor: DateTime.parse(json['tanggal_lapor']),
-      tanggalSelesai: json['tanggal_selesai'] != null 
-          ? DateTime.parse(json['tanggal_selesai']) 
+      tenantId: json['tenant_id'] ?? 0,
+      kamarId: json['kamar_id'] ?? 0,
+      judul: json['judul'] ?? '',
+      deskripsi: json['deskripsi'] ?? '',
+      kategori: json['kategori'] ?? '',
+      prioritas: json['prioritas'] ?? 'sedang',
+      status: json['status'] ?? 'baru',
+      foto: json['foto'] != null
+          ? (json['foto'] is List
+              ? List<String>.from(json['foto'])
+              : [json['foto'].toString()])
           : null,
       komentarAdmin: json['komentar_admin'],
       biaya: json['biaya'] != null ? double.parse(json['biaya'].toString()) : null,
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      tanggalLapor: json['tanggal_lapor'] != null
+          ? DateTime.parse(json['tanggal_lapor'])
+          : DateTime.now(),
+      tanggalSelesai: json['tanggal_selesai'] != null
+          ? DateTime.parse(json['tanggal_selesai'])
+          : null,
       namaTenant: json['nama_tenant'],
+      tenantEmail: json['tenant_email'],
+      tenantPhone: json['tenant_phone'],
       nomorKamar: json['nomor_kamar'],
+      tipeKamar: json['tipe_kamar'],
     );
   }
-  
-  // To JSON
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -78,16 +84,13 @@ class MaintenanceModel {
       'prioritas': prioritas,
       'status': status,
       'foto': foto,
-      'tanggal_lapor': tanggalLapor.toIso8601String().split('T')[0],
-      'tanggal_selesai': tanggalSelesai?.toIso8601String().split('T')[0],
       'komentar_admin': komentarAdmin,
       'biaya': biaya,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'tanggal_lapor': tanggalLapor.toIso8601String(),
+      'tanggal_selesai': tanggalSelesai?.toIso8601String(),
     };
   }
-  
-  // Helper untuk status label
+
   String get statusLabel {
     switch (status) {
       case 'baru':
@@ -102,8 +105,7 @@ class MaintenanceModel {
         return status;
     }
   }
-  
-  // Helper untuk prioritas label
+
   String get prioritasLabel {
     switch (prioritas) {
       case 'rendah':

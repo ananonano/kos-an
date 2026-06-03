@@ -18,7 +18,7 @@ const activityIcons: Record<string, string> = {
 };
 
 export default function DashboardPage() {
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const [stats, setStats] = useState<any>(null);
   const [pendingPayments, setPendingPayments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,49 +26,59 @@ export default function DashboardPage() {
   const monthlyIncome = seedMonthlyIncome;
   const activities = seedActivities;
 
-  // Fetch dashboard data from backend
+  // Fetch dashboard data from backend - ONLY ONCE when component mounts
   useEffect(() => {
+    let mounted = true;
+    
+    const fetchDashboardData = async () => {
+      if (!isAuthenticated) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+
+        // Fetch overview statistics
+        const overviewRes = await api.get("/dashboard/admin");
+        if (mounted && overviewRes.data.success) {
+          const data = overviewRes.data.data;
+
+          // Transform backend data to match frontend structure
+          setStats({
+            totalTenants: data.tenants?.aktif || 0,
+            totalRooms: data.rooms?.total || 0,
+            occupiedRooms: data.rooms?.terisi || 0,
+            availableRooms: data.rooms?.kosong || 0,
+            totalIncome: data.payments?.total_amount || 0,
+            unpaidBills: data.bills?.total_belum_lunas || 0,
+            pendingPayments: data.payments?.total_pending || 0,
+            pendingMaintenance: data.maintenance?.baru || 0,
+          });
+        }
+
+        // Fetch pending payments
+        const paymentsRes = await api.get("/payments?status=menunggu_verifikasi&limit=5");
+        if (mounted && paymentsRes.data.success) {
+          setPendingPayments(paymentsRes.data.data);
+        }
+      } catch (error: any) {
+        if (mounted) {
+          console.error("Fetch dashboard error:", error);
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
     fetchDashboardData();
-  }, []);
 
-  const fetchDashboardData = async () => {
-    try {
-      setIsLoading(true);
-
-      // Fetch overview statistics
-      const overviewRes = await api.get("/dashboard/admin");
-      if (overviewRes.data.success) {
-        const data = overviewRes.data.data;
-
-        // Transform backend data to match frontend structure
-        setStats({
-          totalTenants: data.tenants?.aktif || 0,
-          totalRooms: data.rooms?.total || 0,
-          occupiedRooms: data.rooms?.terisi || 0,
-          availableRooms: data.rooms?.kosong || 0,
-          totalIncome: data.payments?.total_amount || 0,
-          unpaidBills: data.bills?.total_belum_lunas || 0,
-          pendingPayments: data.payments?.total_pending || 0,
-          pendingMaintenance: data.maintenance?.baru || 0,
-        });
-      }
-
-      // Fetch pending payments
-      const paymentsRes = await api.get("/payments?status=menunggu_verifikasi&limit=5");
-      if (paymentsRes.data.success) {
-        setPendingPayments(paymentsRes.data.data);
-      }
-    } catch (error: any) {
-      console.error("Fetch dashboard error:", error);
-      toast({
-        title: "Gagal memuat data dashboard",
-        description: error.response?.data?.message || "Terjadi kesalahan",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    return () => {
+      mounted = false;
+    };
+  }, []); // Empty dependency - only run once
 
   if (isLoading || !stats) {
     return (

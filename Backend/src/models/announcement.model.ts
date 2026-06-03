@@ -285,4 +285,129 @@ export class AnnouncementModel {
             info: parseInt(stats.info),
         };
     }
+
+    // ============================================
+    // READ/UNREAD TRACKING METHODS
+    // ============================================
+
+    // Mark announcement as read by user
+    static async markAsRead(announcementId: number, userId: number): Promise<void> {
+        const query = `
+      INSERT INTO user_announcement_reads (user_id, announcement_id, read_at)
+      VALUES ($1, $2, NOW())
+      ON CONFLICT (user_id, announcement_id) DO NOTHING
+    `;
+        await pool.query(query, [userId, announcementId]);
+    }
+
+    // Get announcements with read status for specific user
+    static async findAllWithReadStatus(
+        userId: number,
+        options: {
+            page?: number;
+            limit?: number;
+            kategori?: string;
+            prioritas?: 'info' | 'penting' | 'urgent';
+            target?: 'semua' | 'tenant' | 'admin';
+            is_active?: boolean;
+            search?: string;
+        }
+    ): Promise<{ announcements: any[]; total: number }> {
+        const page = options.page || 1;
+        const limit = options.limit || 20;
+        const offset = (page - 1) * limit;
+
+        let whereClause = 'WHERE 1=1';
+        const values: any[] = [userId];
+        let paramCount = 2;
+
+        if (options.kategori) {
+            whereClause += ` AND a.kategori = $${paramCount}`;
+            values.push(options.kategori);
+            paramCount++;
+        }
+
+        if (options.prioritas) {
+            whereClause += ` AND a.prioritas = $${paramCount}`;
+            values.push(options.prioritas);
+            paramCount++;
+        }
+
+        if (options.target) {
+            whereClause += ` AND a.target = $${paramCount}`;
+            values.push(options.target);
+            paramCount++;
+        }
+
+        if (options.is_active !== undefined) {
+            whereClause += ` AND a.is_active = $${paramCount}`;
+            values.push(options.is_active);
+            paramCount++;
+        }
+
+        if (options.search) {
+            whereClause += ` AND (a.judul ILIKE $${paramCount} OR a.konten ILIKE $${paramCount})`;
+            values.push(`%${options.search}%`);
+            paramCount++;
+        }
+
+        // Get total count
+        const countQuery = `
+      SELECT COUNT(*) 
+      FROM announcements a
+      ${whereClause}
+    `;
+        const countResult = await pool.query(countQuery, values.slice(1));
+        const total = parseInt(countResult.rows[0].count);
+
+        // Get announcements with read status
+        const query = `
+      SELECT a.*, 
+        u.nama as created_by_name,
+        CASE WHEN uar.read_at IS NOT NULL THEN true ELSE false END as is_read,
+        uar.read_at
+      FROM announcements a
+      JOIN users u ON a.created_by = u.id
+      LEFT JOIN user_announcement_reads uar ON uar.announcement_id = a.id AND uar.user_id = $1
+      ${whereClause}
+      ORDER BY 
+        CASE a.prioritas
+          WHEN 'urgent' THEN 1
+          WHEN 'penting' THEN 2
+          WHEN 'info' THEN 3
+        END,
+        a.created_at DESC
+      LIMIT $${paramCount} OFFSET $${paramCount + 1}
+    `;
+
+        values.push(limit, offset);
+        const result = await pool.query(query, values);
+
+        return { announcements: result.rows, total };
+    }
+
+    // Get unread announcement count for user
+    static async getUnreadCount(userId: number): Promise<number> {
+        const query = `
+      SELECT COUNT(*) 
+      FROM announcements a
+      LEFT JOIN user_announcement_reads uar ON uar.announcement_id = a.id AND uar.user_id = $1
+      WHERE a.is_active = true 
+        AND uar.read_at IS NULL
+    `;
+        const result = await pool.query(query, [userId]);
+        return parseInt(result.rows[0].count);
+    }
+
+    // Check if user has read an announcement
+    static async isReadByUser(announcementId: number, userId: number): Promise<boolean> {
+        const query = `
+      SELECT EXISTS(
+        SELECT 1 FROM user_announcement_reads 
+        WHERE announcement_id = $1 AND user_id = $2
+      ) as is_read
+    `;
+        const result = await pool.query(query, [announcementId, userId]);
+        return result.rows[0].is_read;
+    }
 }

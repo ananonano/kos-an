@@ -1,6 +1,7 @@
 import '../core/services/firebase_service.dart';
 import '../core/config/app_config.dart';
 import '../models/chat_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Chat Service
 /// Mengelola operasi chat realtime melalui Firebase Firestore
@@ -13,21 +14,25 @@ class ChatService {
     String? adminName,
   }) async {
     try {
-      // Check if chat room already exists
-      final existingRooms = await FirebaseService.getDocuments(
-        AppConfig.chatCollection,
-        where: {
-          'penghuni_id': penghuniId,
-          'admin_id': adminId,
-        },
-      );
+      // Check if chat room already exists using Firestore query
+      final existingRooms = await FirebaseFirestore.instance
+          .collection(AppConfig.chatCollection)
+          .where('penghuni_id', isEqualTo: penghuniId)
+          .where('admin_id', isEqualTo: adminId)
+          .limit(1)
+          .get();
       
-      if (existingRooms.isNotEmpty) {
-        return existingRooms.first['id'];
+      if (existingRooms.docs.isNotEmpty) {
+        return existingRooms.docs.first.id;
       }
       
-      // Create new chat room
+      // Create new chat room directly using Firestore
+      final chatRoomRef = FirebaseFirestore.instance
+          .collection(AppConfig.chatCollection)
+          .doc(); // Auto-generate ID
+      
       final data = {
+        'id': chatRoomRef.id,
         'penghuni_id': penghuniId,
         'admin_id': adminId,
         'last_message': null,
@@ -35,14 +40,13 @@ class ChatService {
         'unread_count': 0,
         'penghuni_name': penghuniName,
         'admin_name': adminName,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
       };
       
-      final docId = await FirebaseService.addDocument(
-        AppConfig.chatCollection,
-        data,
-      );
+      await chatRoomRef.set(data);
       
-      return docId;
+      return chatRoomRef.id;
     } catch (e) {
       throw Exception('Gagal membuat chat room: ${e.toString()}');
     }
@@ -58,6 +62,21 @@ class ChatService {
     String? senderRole,
   }) async {
     try {
+      print('📤 [ChatService] Sending message...');
+      print('  Chat Room ID: $chatRoomId');
+      print('  Sender ID: $senderId');
+      print('  Message: $message');
+      
+      // Get reference to chat room
+      final chatRoomRef = FirebaseFirestore.instance
+          .collection(AppConfig.chatCollection)
+          .doc(chatRoomId);
+      
+      // Get reference to messages subcollection
+      final messagesRef = chatRoomRef.collection('messages');
+      
+      print('📍 [ChatService] Messages path: ${AppConfig.chatCollection}/$chatRoomId/messages');
+      
       // Add message to subcollection
       final messageData = {
         'chat_room_id': chatRoomId,
@@ -66,24 +85,30 @@ class ChatService {
         'image_url': imageUrl,
         'sender_name': senderName,
         'sender_role': senderRole,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
       };
       
-      await FirebaseService.addDocument(
-        '${AppConfig.chatCollection}/$chatRoomId/messages',
-        messageData,
-      );
+      print('📦 [ChatService] Adding message to subcollection...');
+      final docRef = await messagesRef.add(messageData);
+      print('✅ [ChatService] Message added with ID: ${docRef.id}');
+      
+      // Update message with its ID
+      await messagesRef.doc(docRef.id).update({'id': docRef.id});
+      print('✅ [ChatService] Message ID updated');
       
       // Update chat room last message
-      await FirebaseService.updateDocument(
-        AppConfig.chatCollection,
-        chatRoomId,
-        {
-          'last_message': message,
-          'last_message_time': DateTime.now(),
-          'unread_count': 1, // Increment in real implementation
-        },
-      );
+      await chatRoomRef.update({
+        'last_message': message,
+        'last_message_time': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        // Don't increment unread_count for now (can be improved later)
+      });
+      
+      print('✅ [ChatService] Chat room updated');
+      print('🎉 [ChatService] Message sent successfully!');
     } catch (e) {
+      print('❌ [ChatService] Error sending message: $e');
       throw Exception('Gagal mengirim pesan: ${e.toString()}');
     }
   }
@@ -91,12 +116,17 @@ class ChatService {
   // Stream Messages
   static Stream<List<ChatMessageModel>> streamMessages(String chatRoomId) {
     try {
-      return FirebaseService.streamDocuments(
-        '${AppConfig.chatCollection}/$chatRoomId/messages',
-        orderBy: 'createdAt',
-        descending: false,
-      ).map((docs) {
-        return docs.map((doc) => ChatMessageModel.fromFirestore(doc)).toList();
+      return FirebaseFirestore.instance
+          .collection(AppConfig.chatCollection)
+          .doc(chatRoomId)
+          .collection('messages')
+          .orderBy('createdAt', descending: false)
+          .snapshots()
+          .map((snapshot) {
+        return snapshot.docs.map((doc) {
+          final data = {'id': doc.id, ...doc.data()};
+          return ChatMessageModel.fromFirestore(data);
+        }).toList();
       });
     } catch (e) {
       throw Exception('Gagal streaming pesan: ${e.toString()}');
@@ -109,22 +139,25 @@ class ChatService {
     String? role,
   }) {
     try {
-      final where = <String, dynamic>{};
+      Query query = FirebaseFirestore.instance
+          .collection(AppConfig.chatCollection);
+      
       if (userId != null && role != null) {
         if (role == 'admin') {
-          where['admin_id'] = userId;
+          query = query.where('admin_id', isEqualTo: userId);
         } else {
-          where['penghuni_id'] = userId;
+          // For tenant, query by penghuni_id (tenant_id from tenants table)
+          query = query.where('penghuni_id', isEqualTo: userId);
         }
       }
       
-      return FirebaseService.streamDocuments(
-        AppConfig.chatCollection,
-        orderBy: 'updatedAt',
-        descending: true,
-        where: where.isNotEmpty ? where : null,
-      ).map((docs) {
-        return docs.map((doc) => ChatRoomModel.fromFirestore(doc)).toList();
+      query = query.orderBy('updatedAt', descending: true);
+      
+      return query.snapshots().map((snapshot) {
+        return snapshot.docs.map((doc) {
+          final data = {'id': doc.id, ...doc.data() as Map<String, dynamic>};
+          return ChatRoomModel.fromFirestore(data);
+        }).toList();
       });
     } catch (e) {
       throw Exception('Gagal streaming chat rooms: ${e.toString()}');

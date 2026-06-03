@@ -1,5 +1,4 @@
 import '../core/services/http_service.dart';
-import '../core/config/app_config.dart';
 import '../models/announcement_model.dart';
 
 /// Announcement Service
@@ -16,7 +15,7 @@ class AnnouncementService {
       if (prioritas != null) queryParams['prioritas'] = prioritas;
 
       final response = await HttpService.get(
-        '${AppConfig.apiBaseUrl}$_endpoint',
+        _endpoint,
         queryParams: queryParams,
       );
 
@@ -35,7 +34,7 @@ class AnnouncementService {
   static Future<AnnouncementModel> getAnnouncementById(String id) async {
     try {
       final response = await HttpService.get(
-        '${AppConfig.apiBaseUrl}$_endpoint/$id',
+        '$_endpoint/$id',
       );
 
       if (response['success'] != true) {
@@ -56,7 +55,7 @@ class AnnouncementService {
   }) async {
     try {
       final response = await HttpService.post(
-        '${AppConfig.apiBaseUrl}$_endpoint',
+        _endpoint,
         body: {
           'judul': judul,
           'isi': isi,
@@ -88,7 +87,7 @@ class AnnouncementService {
       if (prioritas != null) body['prioritas'] = prioritas;
 
       final response = await HttpService.put(
-        '${AppConfig.apiBaseUrl}$_endpoint/$id',
+        '$_endpoint/$id',
         body: body,
       );
 
@@ -106,7 +105,7 @@ class AnnouncementService {
   static Future<void> deleteAnnouncement(String id) async {
     try {
       final response = await HttpService.delete(
-        '${AppConfig.apiBaseUrl}$_endpoint/$id',
+        '$_endpoint/$id',
       );
 
       if (response['success'] != true) {
@@ -114,6 +113,41 @@ class AnnouncementService {
       }
     } catch (e) {
       throw Exception('Gagal menghapus pengumuman: ${e.toString()}');
+    }
+  }
+
+  // Mark Announcement as Read
+  static Future<void> markAsRead(String id) async {
+    try {
+      final response = await HttpService.post(
+        '$_endpoint/$id/mark-read',
+        body: {},
+      );
+
+      if (response['success'] != true) {
+        throw Exception(response['message'] ?? 'Gagal menandai pengumuman sebagai dibaca');
+      }
+    } catch (e) {
+      // Silent fail - not critical if marking as read fails
+      print('Warning: Failed to mark announcement as read: ${e.toString()}');
+    }
+  }
+
+  // Get Unread Count
+  static Future<int> getUnreadCount() async {
+    try {
+      final response = await HttpService.get(
+        '$_endpoint/unread-count',
+      );
+
+      if (response['success'] != true) {
+        throw Exception(response['message'] ?? 'Gagal mengambil jumlah pengumuman belum dibaca');
+      }
+
+      return response['data']['unread_count'] ?? 0;
+    } catch (e) {
+      print('Warning: Failed to get unread count: ${e.toString()}');
+      return 0;
     }
   }
 }

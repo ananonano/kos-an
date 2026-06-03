@@ -33,7 +33,9 @@ class ChatMessageModel {
       senderId: data['sender_id'],
       message: data['message'],
       imageUrl: data['image_url'],
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
       senderName: data['sender_name'],
       senderRole: data['sender_role'],
     );
@@ -92,8 +94,12 @@ class ChatRoomModel {
           ? (data['last_message_time'] as Timestamp).toDate()
           : null,
       unreadCount: data['unread_count'] ?? 0,
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      createdAt: data['createdAt'] != null 
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+      updatedAt: data['updatedAt'] != null
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : DateTime.now(),
       penghuniName: data['penghuni_name'],
       adminName: data['admin_name'],
     );

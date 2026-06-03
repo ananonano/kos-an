@@ -6,6 +6,7 @@ const router = Router();
 
 router.get("/", authenticate, adminOnly, TenantController.getAll);
 router.get("/statistics", authenticate, adminOnly, TenantController.getStatistics);
+router.get("/by-user/:userId", authenticate, TenantController.getByUserId);  // ✅ New endpoint for tenant users
 router.get("/:id", authenticate, adminOnly, TenantController.getById);
 router.post("/", authenticate, adminOnly, TenantController.create);
 router.put("/:id", authenticate, adminOnly, TenantController.update);

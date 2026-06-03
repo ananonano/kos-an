@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../core/services/notification_polling_service.dart';
 
 /// Authentication Controller
 /// Mengelola state dan logic untuk autentikasi
@@ -19,6 +20,12 @@ class AuthController extends ChangeNotifier {
   // Initialize - Check if user is already logged in
   Future<void> initialize() async {
     _currentUser = AuthService.getCurrentUser();
+    
+    // Start notification polling if user is logged in
+    if (_currentUser != null) {
+      await NotificationPollingService.start();
+    }
+    
     notifyListeners();
   }
   
@@ -30,6 +37,11 @@ class AuthController extends ChangeNotifier {
       notifyListeners();
       
       _currentUser = await AuthService.login(email, password);
+      
+      // Start notification polling after successful login
+      if (_currentUser != null) {
+        await NotificationPollingService.start();
+      }
       
       _isLoading = false;
       notifyListeners();
@@ -78,6 +90,9 @@ class AuthController extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
       
+      // Stop notification polling
+      NotificationPollingService.stop();
+      
       await AuthService.logout();
       _currentUser = null;
       
@@ -94,5 +109,16 @@ class AuthController extends ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+  
+  // Get Admin User (for chat)
+  Future<Map<String, dynamic>?> getAdminUser() async {
+    try {
+      return await AuthService.getAdminUser();
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return null;
+    }
   }
 }

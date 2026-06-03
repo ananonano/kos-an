@@ -373,4 +373,139 @@ export class BillModel {
         };
         return months[bulan] || 1;
     }
+
+    // Helper: Get month name from number
+    private static getMonthName(month: number): string {
+        const months = [
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+        ];
+        return months[month - 1] || 'Januari';
+    }
+
+    /**
+     * Generate bills for a specific tenant based on their tanggal_masuk
+     * Creates bills from tanggal_masuk up to current date
+     */
+    static async generateBillsForTenant(tenantId: number): Promise<Bill[]> {
+        const client = await pool.connect();
+
+        try {
+            await client.query('BEGIN');
+
+            // Get tenant info
+            const getTenantQuery = `
+        SELECT t.id, t.tanggal_masuk, t.kamar_id, r.harga
+        FROM tenants t
+        JOIN rooms r ON t.kamar_id = r.id
+        WHERE t.id = $1 AND t.status = 'aktif'
+      `;
+            const tenantResult = await client.query(getTenantQuery, [tenantId]);
+
+            if (tenantResult.rows.length === 0) {
+                throw new Error('Tenant not found or not active');
+            }
+
+            const tenant = tenantResult.rows[0];
+            const tanggalMasuk = new Date(tenant.tanggal_masuk);
+            const today = new Date();
+            const bills: Bill[] = [];
+
+            // Calculate how many billing periods from tanggal_masuk to today
+            let currentPeriodStart = new Date(tanggalMasuk);
+
+            while (currentPeriodStart <= today) {
+                // Calculate period end (1 month after start)
+                const periodEnd = new Date(currentPeriodStart);
+                periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+                // Jatuh tempo is the same as period end
+                const jatuhTempo = new Date(periodEnd);
+
+                // Generate readable period label (e.g., "Juni 2026")
+                const bulan = this.getMonthName(currentPeriodStart.getMonth() + 1);
+                const tahun = currentPeriodStart.getFullYear();
+
+                // Check if bill already exists for this period
+                const checkQuery = `
+          SELECT id FROM bills 
+          WHERE tenant_id = $1 
+            AND bulan = $2 
+            AND tahun = $3
+        `;
+                const checkResult = await client.query(checkQuery, [tenantId, bulan, tahun]);
+
+                if (checkResult.rows.length === 0) {
+                    // Create bill
+                    const insertQuery = `
+            INSERT INTO bills (
+              tenant_id, contract_id, bulan, tahun, jumlah,
+              status, jatuh_tempo, denda, catatan
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING *
+          `;
+
+                    const status = jatuhTempo < today ? 'terlambat' : 'belum_lunas';
+                    const periodEndFormatted = new Date(periodEnd);
+                    periodEndFormatted.setDate(periodEndFormatted.getDate() - 1);
+
+                    const insertValues = [
+                        tenantId,
+                        null, // contract_id not used
+                        bulan,
+                        tahun,
+                        tenant.harga,
+                        status,
+                        jatuhTempo,
+                        0,
+                        `Tagihan periode ${currentPeriodStart.getDate()} ${bulan} - ${periodEndFormatted.getDate()} ${this.getMonthName(periodEndFormatted.getMonth() + 1)} ${periodEndFormatted.getFullYear()}`,
+                    ];
+
+                    const billResult = await client.query(insertQuery, insertValues);
+                    bills.push(billResult.rows[0]);
+                }
+
+                // Move to next period
+                currentPeriodStart = new Date(periodEnd);
+            }
+
+            await client.query('COMMIT');
+            return bills;
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Generate bills for all active tenants based on their tanggal_masuk
+     */
+    static async generateBillsForAllTenants(): Promise<{ tenant_id: number; bills_created: number }[]> {
+        const client = await pool.connect();
+
+        try {
+            // Get all active tenants
+            const getTenantsQuery = `
+        SELECT id FROM tenants 
+        WHERE status = 'aktif' AND kamar_id IS NOT NULL
+      `;
+            const tenantsResult = await client.query(getTenantsQuery);
+            const results = [];
+
+            for (const tenant of tenantsResult.rows) {
+                const bills = await this.generateBillsForTenant(tenant.id);
+                results.push({
+                    tenant_id: tenant.id,
+                    bills_created: bills.length,
+                });
+            }
+
+            return results;
+        } finally {
+            client.release();
+        }
+    }
 }

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../controllers/announcement_controller.dart';
 import '../../core/theme/app_theme.dart';
+import '../../services/announcement_service.dart';
 
 /// Announcement Detail View
 /// Tampilan detail pengumuman
@@ -20,11 +21,23 @@ class _AnnouncementDetailViewState extends State<AnnouncementDetailView> {
   void initState() {
     super.initState();
     _loadAnnouncementDetail();
+    // Mark as read when opening detail
+    _markAsRead();
   }
   
   Future<void> _loadAnnouncementDetail() async {
     final announcementController = context.read<AnnouncementController>();
     await announcementController.getAnnouncementDetail(widget.announcementId);
+  }
+  
+  Future<void> _markAsRead() async {
+    // Mark announcement as read
+    await AnnouncementService.markAsRead(widget.announcementId);
+    // Refresh list to update badge
+    if (mounted) {
+      final announcementController = context.read<AnnouncementController>();
+      await announcementController.getAllAnnouncements();
+    }
   }
   
   @override

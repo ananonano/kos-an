@@ -5,6 +5,7 @@ import '../../routes/app_routes.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/helpers.dart';
 import '../../widgets/kamar_card.dart';
+import '../../widgets/app_drawer.dart';
 
 /// Kamar List View
 /// Tampilan daftar kamar
@@ -30,7 +31,15 @@ class _KamarListViewState extends State<KamarListView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Daftar Kamar'),
+        title: const Text('Daftar Kamar'),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
+        ),
         actions: [
           PopupMenuButton<String>(
             icon: Icon(Icons.filter_list),
@@ -59,6 +68,7 @@ class _KamarListViewState extends State<KamarListView> {
           ),
         ],
       ),
+      drawer: const AppDrawer(),
       body: Consumer<KamarController>(
         builder: (context, controller, _) {
           if (controller.isLoading) {

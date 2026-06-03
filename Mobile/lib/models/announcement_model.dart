@@ -3,16 +3,22 @@
 class AnnouncementModel {
   final String id;
   final String judul;
-  final String isi;
-  final String prioritas; // 'rendah', 'sedang', 'tinggi'
+  final String konten;
+  final String prioritas; // 'info', 'penting', 'urgent'
+  final String? kategori;
+  final String? target; // 'semua', 'tenant', 'admin'
+  final bool isRead; // Status sudah dibaca atau belum
   final DateTime createdAt;
   final DateTime updatedAt;
 
   AnnouncementModel({
     required this.id,
     required this.judul,
-    required this.isi,
+    required this.konten,
     required this.prioritas,
+    this.kategori,
+    this.target,
+    this.isRead = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -22,8 +28,11 @@ class AnnouncementModel {
     return AnnouncementModel(
       id: json['id'].toString(),
       judul: json['judul'],
-      isi: json['isi'],
+      konten: json['konten'],
       prioritas: json['prioritas'],
+      kategori: json['kategori'],
+      target: json['target'],
+      isRead: json['is_read'] ?? false,
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
     );
@@ -34,8 +43,11 @@ class AnnouncementModel {
     return {
       'id': id,
       'judul': judul,
-      'isi': isi,
+      'konten': konten,
       'prioritas': prioritas,
+      'kategori': kategori,
+      'target': target,
+      'is_read': isRead,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -44,17 +56,23 @@ class AnnouncementModel {
   // Helper untuk prioritas label
   String get prioritasLabel {
     switch (prioritas) {
-      case 'tinggi':
+      case 'urgent':
+        return 'Urgent';
+      case 'penting':
         return 'Penting';
-      case 'sedang':
-        return 'Sedang';
-      case 'rendah':
-        return 'Biasa';
+      case 'info':
+        return 'Info';
       default:
         return prioritas;
     }
   }
 
-  // Helper untuk check apakah prioritas tinggi
-  bool get isUrgent => prioritas == 'tinggi';
+  // Helper untuk check apakah prioritas urgent
+  bool get isUrgent => prioritas == 'urgent';
+  
+  // Helper untuk check apakah prioritas penting
+  bool get isPenting => prioritas == 'penting';
+  
+  // Backward compatibility
+  String get isi => konten;
 }

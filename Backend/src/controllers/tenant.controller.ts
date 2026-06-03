@@ -286,4 +286,33 @@ export class TenantController {
       });
     }
   }
+
+  /**
+   * Get tenant by user_id
+   * Returns tenant data for logged in user
+   */
+  static async getByUserId(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+
+      const tenant = await TenantModel.findByUserId(parseInt(userId));
+      if (!tenant) {
+        return res.status(404).json({
+          success: false,
+          message: 'Data tenant tidak ditemukan'
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: tenant
+      });
+    } catch (error) {
+      console.error('GetByUserId tenant error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
 }

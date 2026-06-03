@@ -10,3 +10,4 @@ export { BillModel } from './bill.model';
 export { PaymentModel } from './payment.model';
 export { MaintenanceModel } from './maintenance.model';
 export { AnnouncementModel } from './announcement.model';
+export { NotificationModel } from './notification.model';

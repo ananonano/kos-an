@@ -1,38 +1,40 @@
 /// Notification Model
-/// Model untuk data notifikasi - sesuai backend schema
 class NotificationModel {
   final String id;
   final String userId;
   final String title;
   final String message;
-  final String type; // 'payment', 'maintenance', 'announcement', etc.
+  final String type; // payment, maintenance, announcement, system
+  final int? relatedId;
   final bool isRead;
   final DateTime createdAt;
-  
+
   NotificationModel({
     required this.id,
     required this.userId,
     required this.title,
     required this.message,
     required this.type,
+    this.relatedId,
     required this.isRead,
     required this.createdAt,
   });
-  
-  // From JSON
+
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
       id: json['id'].toString(),
-      userId: json['user_id'].toString(),
-      title: json['title'],
-      message: json['message'],
-      type: json['type'],
-      isRead: json['is_read'] == true || json['is_read'] == 1,
-      createdAt: DateTime.parse(json['created_at']),
+      userId: json['user_id']?.toString() ?? '',
+      title: json['title'] ?? '',
+      message: json['message'] ?? '',
+      type: json['type'] ?? 'system',
+      relatedId: json['related_id'],
+      isRead: json['is_read'] ?? false,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
     );
   }
-  
-  // To JSON
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -40,29 +42,40 @@ class NotificationModel {
       'title': title,
       'message': message,
       'type': type,
+      'related_id': relatedId,
       'is_read': isRead,
       'created_at': createdAt.toIso8601String(),
     };
   }
-  
-  // Copy with
-  NotificationModel copyWith({
-    String? id,
-    String? userId,
-    String? title,
-    String? message,
-    String? type,
-    bool? isRead,
-    DateTime? createdAt,
-  }) {
-    return NotificationModel(
-      id: id ?? this.id,
-      userId: userId ?? this.userId,
-      title: title ?? this.title,
-      message: message ?? this.message,
-      type: type ?? this.type,
-      isRead: isRead ?? this.isRead,
-      createdAt: createdAt ?? this.createdAt,
-    );
+
+  String get typeLabel {
+    switch (type) {
+      case 'payment':
+        return 'Pembayaran';
+      case 'maintenance':
+        return 'Keluhan';
+      case 'announcement':
+        return 'Pengumuman';
+      case 'system':
+        return 'Sistem';
+      default:
+        return 'Notifikasi';
+    }
+  }
+
+  String get typeIcon {
+    switch (type) {
+      case 'payment':
+        return '💳';
+      case 'maintenance':
+        return '🔧';
+      case 'announcement':
+        return '📢';
+      case 'system':
+        return '⚙️';
+      default:
+        return '🔔';
+    }
   }
 }
+

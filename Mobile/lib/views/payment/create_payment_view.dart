@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../controllers/payment_controller.dart';
 import '../../controllers/bill_controller.dart';
 import '../../controllers/auth_controller.dart';
+import '../../services/tenant_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
@@ -109,8 +110,34 @@ class _CreatePaymentViewState extends State<CreatePaymentView> {
     final authController = context.read<AuthController>();
     final paymentController = context.read<PaymentController>();
     
+    // Get tenant_id from tenants table based on user_id
+    final user = authController.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('User tidak ditemukan'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    // Get tenant data by user_id
+    final tenant = await TenantService.getTenantByUserId(user.id.toString());
+    
+    if (tenant == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Data tenant tidak ditemukan'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
     final success = await paymentController.createPayment(
-      tagihanId: widget.billId,
+      billId: widget.billId,
+      tenantId: int.parse(tenant.id),
       jumlah: double.parse(_jumlahController.text),
       metodePembayaran: _metodePembayaran,
       buktiPembayaran: _buktiPembayaranPath,

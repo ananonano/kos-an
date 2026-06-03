@@ -5,15 +5,47 @@ export class PaymentController {
   /**
    * Get all payments with pagination and filters
    * Query params: page, limit, tenant_id, bill_id, status, search
+   * AUTOMATIC FILTERING: If user is tenant, only return their payments
    */
   static async getAll(req: Request, res: Response) {
     try {
       const { page, limit, tenant_id, bill_id, status, search } = req.query;
+      const user = (req as any).user; // From auth middleware
+
+      let finalTenantId = tenant_id ? parseInt(tenant_id as string) : undefined;
+
+      // 🔒 AUTO-FILTER: If user is tenant, override tenant_id with their own
+      if (user && user.role === 'tenant') {
+        // Get tenant_id from tenants table based on user_id
+        const { pool } = await import('../config/database');
+        const tenantResult = await pool.query(
+          'SELECT id FROM tenants WHERE user_id = $1 LIMIT 1',
+          [user.id]
+        );
+        
+        if (tenantResult.rows.length > 0) {
+          finalTenantId = tenantResult.rows[0].id;
+          console.log(`🔒 [PaymentController] Auto-filtering for tenant user_id=${user.id} → tenant_id=${finalTenantId}`);
+        } else {
+          console.warn(`⚠️ [PaymentController] Tenant user_id=${user.id} not found in tenants table`);
+          // Return empty result if tenant not found
+          return res.json({
+            success: true,
+            data: [],
+            pagination: {
+              page: parseInt(page as string) || 1,
+              limit: parseInt(limit as string) || 20,
+              total: 0,
+              totalPages: 0
+            }
+          });
+        }
+      }
 
       const result = await PaymentModel.findAll({
         page: page ? parseInt(page as string) : 1,
         limit: limit ? parseInt(limit as string) : 20,
-        tenant_id: tenant_id ? parseInt(tenant_id as string) : undefined,
+        tenant_id: finalTenantId,
         bill_id: bill_id ? parseInt(bill_id as string) : undefined,
         status: status as any,
         search: search as string

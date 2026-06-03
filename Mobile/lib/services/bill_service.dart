@@ -1,10 +1,11 @@
 import '../core/services/http_service.dart';
-import '../core/config/app_config.dart';
 import '../models/bill_model.dart';
 
 /// Bill Service (Tagihan)
 /// Mengelola operasi tagihan melalui REST API
 class BillService {
+  static const String _endpoint = '/bills';
+
   // Get All Bills
   static Future<List<BillModel>> getAllBills({
     String? status,
@@ -24,11 +25,15 @@ class BillService {
       if (limit != null) queryParams['limit'] = limit.toString();
       
       final response = await HttpService.get(
-        AppConfig.billsEndpoint,
+        _endpoint,
         queryParams: queryParams,
       );
       
-      final List<dynamic> data = response['data'];
+      if (response['success'] != true) {
+        throw Exception(response['message'] ?? 'Gagal mengambil data tagihan');
+      }
+      
+      final List<dynamic> data = response['data'] ?? [];
       return data.map((json) => BillModel.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Gagal mengambil data tagihan: ${e.toString()}');
@@ -38,7 +43,12 @@ class BillService {
   // Get Bill Statistics (Admin only)
   static Future<Map<String, dynamic>> getBillStatistics() async {
     try {
-      final response = await HttpService.get('${AppConfig.billsEndpoint}/statistics');
+      final response = await HttpService.get('$_endpoint/statistics');
+      
+      if (response['success'] != true) {
+        throw Exception(response['message'] ?? 'Gagal mengambil statistik tagihan');
+      }
+      
       return response['data'];
     } catch (e) {
       throw Exception('Gagal mengambil statistik tagihan: ${e.toString()}');
@@ -48,7 +58,12 @@ class BillService {
   // Get Bill by ID
   static Future<BillModel> getBillById(String id) async {
     try {
-      final response = await HttpService.get('${AppConfig.billsEndpoint}/$id');
+      final response = await HttpService.get('$_endpoint/$id');
+      
+      if (response['success'] != true) {
+        throw Exception(response['message'] ?? 'Gagal mengambil detail tagihan');
+      }
+      
       return BillModel.fromJson(response['data']);
     } catch (e) {
       throw Exception('Gagal mengambil detail tagihan: ${e.toString()}');
@@ -66,17 +81,21 @@ class BillService {
   }) async {
     try {
       final response = await HttpService.post(
-        AppConfig.billsEndpoint,
+        _endpoint,
         body: {
           'tenant_id': tenantId,
           'bulan': bulan,
           'tahun': tahun,
           'jumlah': jumlah,
-          'tanggal_jatuh_tempo': tanggalJatuhTempo,
-          'keterangan': keterangan,
-          'status': 'belum_bayar',
+          'jatuh_tempo': tanggalJatuhTempo,
+          'catatan': keterangan,
+          'status': 'belum_lunas',
         },
       );
+      
+      if (response['success'] != true) {
+        throw Exception(response['message'] ?? 'Gagal membuat tagihan');
+      }
       
       return BillModel.fromJson(response['data']);
     } catch (e) {
@@ -99,14 +118,18 @@ class BillService {
       if (bulan != null) body['bulan'] = bulan;
       if (tahun != null) body['tahun'] = tahun;
       if (jumlah != null) body['jumlah'] = jumlah;
-      if (tanggalJatuhTempo != null) body['tanggal_jatuh_tempo'] = tanggalJatuhTempo;
-      if (keterangan != null) body['keterangan'] = keterangan;
+      if (tanggalJatuhTempo != null) body['jatuh_tempo'] = tanggalJatuhTempo;
+      if (keterangan != null) body['catatan'] = keterangan;
       if (status != null) body['status'] = status;
       
       final response = await HttpService.put(
-        '${AppConfig.billsEndpoint}/$id',
+        '$_endpoint/$id',
         body: body,
       );
+      
+      if (response['success'] != true) {
+        throw Exception(response['message'] ?? 'Gagal mengupdate tagihan');
+      }
       
       return BillModel.fromJson(response['data']);
     } catch (e) {
@@ -117,7 +140,11 @@ class BillService {
   // Delete Bill (Admin only)
   static Future<void> deleteBill(String id) async {
     try {
-      await HttpService.delete('${AppConfig.billsEndpoint}/$id');
+      final response = await HttpService.delete('$_endpoint/$id');
+      
+      if (response['success'] != true) {
+        throw Exception(response['message'] ?? 'Gagal menghapus tagihan');
+      }
     } catch (e) {
       throw Exception('Gagal menghapus tagihan: ${e.toString()}');
     }
@@ -130,14 +157,18 @@ class BillService {
   }) async {
     try {
       final response = await HttpService.post(
-        '${AppConfig.billsEndpoint}/generate-monthly',
+        '$_endpoint/generate-monthly',
         body: {
           'bulan': bulan,
           'tahun': tahun,
         },
       );
       
-      final List<dynamic> data = response['data'];
+      if (response['success'] != true) {
+        throw Exception(response['message'] ?? 'Gagal generate tagihan bulanan');
+      }
+      
+      final List<dynamic> data = response['data'] ?? [];
       return data.map((json) => BillModel.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Gagal generate tagihan bulanan: ${e.toString()}');
@@ -148,9 +179,13 @@ class BillService {
   static Future<Map<String, dynamic>> updateOverdueBills() async {
     try {
       final response = await HttpService.post(
-        '${AppConfig.billsEndpoint}/update-overdue',
+        '$_endpoint/update-overdue',
         body: {},
       );
+      
+      if (response['success'] != true) {
+        throw Exception(response['message'] ?? 'Gagal update tagihan terlambat');
+      }
       
       return response['data'];
     } catch (e) {

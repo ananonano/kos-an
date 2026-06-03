@@ -15,7 +15,15 @@ import '../views/payment/payment_history_view.dart';
 import '../views/payment/create_payment_view.dart';
 import '../views/announcement/announcement_list_view.dart';
 import '../views/announcement/announcement_detail_view.dart';
+import '../views/notification/notification_list_view.dart';
 import '../views/profile/profile_view.dart';
+import '../views/tenant/tenant_list_view.dart';
+import '../views/tenant/tenant_detail_view.dart';
+import '../views/tenant/create_tenant_view.dart';
+import '../views/tenant/edit_tenant_view.dart';
+import '../views/maintenance/maintenance_list_view.dart';
+import '../views/maintenance/maintenance_detail_view.dart';
+import '../views/maintenance/create_maintenance_view.dart';
 
 /// App Routes
 /// Mengelola routing aplikasi
@@ -37,7 +45,15 @@ class AppRoutes {
   static const String createPayment = '/payments/create';
   static const String announcementList = '/announcements';
   static const String announcementDetail = '/announcements/detail';
+  static const String notificationList = '/notifications';
   static const String profile = '/profile';
+  static const String tenantList = '/tenants';
+  static const String tenantDetail = '/tenants/detail';
+  static const String createTenant = '/tenants/create';
+  static const String editTenant = '/tenants/edit';
+  static const String maintenanceList = '/maintenance';
+  static const String maintenanceDetail = '/maintenance/detail';
+  static const String createMaintenance = '/maintenance/create';
   
   // Generate Route
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -108,8 +124,41 @@ class AppRoutes {
           builder: (_) => AnnouncementDetailView(announcementId: announcementId),
         );
       
+      case notificationList:
+        return MaterialPageRoute(builder: (_) => const NotificationListView());
+      
       case profile:
         return MaterialPageRoute(builder: (_) => const ProfileView());
+      
+      case tenantList:
+        return MaterialPageRoute(builder: (_) => const TenantListView());
+      
+      case tenantDetail:
+        final tenantId = settings.arguments as String;
+        return MaterialPageRoute(
+          builder: (_) => TenantDetailView(tenantId: tenantId),
+        );
+      
+      case createTenant:
+        return MaterialPageRoute(builder: (_) => const CreateTenantView());
+      
+      case editTenant:
+        final tenantId = settings.arguments as String;
+        return MaterialPageRoute(
+          builder: (_) => EditTenantView(tenantId: tenantId),
+        );
+      
+      case maintenanceList:
+        return MaterialPageRoute(builder: (_) => const MaintenanceListView());
+      
+      case maintenanceDetail:
+        final maintenanceId = settings.arguments as String;
+        return MaterialPageRoute(
+          builder: (_) => MaintenanceDetailView(maintenanceId: maintenanceId),
+        );
+      
+      case createMaintenance:
+        return MaterialPageRoute(builder: (_) => const CreateMaintenanceView());
       
       default:
         return MaterialPageRoute(

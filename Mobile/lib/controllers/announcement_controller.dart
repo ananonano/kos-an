@@ -55,24 +55,24 @@ class AnnouncementController extends ChangeNotifier {
   // Get Announcements (alias for getAllAnnouncements)
   List<AnnouncementModel> get announcements => _announcementList;
   
-  // Get Urgent Announcements (prioritas tinggi)
+  // Get Urgent Announcements
   List<AnnouncementModel> get urgentAnnouncements {
     return _announcementList.where((announcement) => 
-      announcement.prioritas == 'tinggi'
+      announcement.prioritas == 'urgent'
     ).toList();
   }
   
-  // Get Important Announcements (prioritas sedang)
+  // Get Important Announcements
   List<AnnouncementModel> get importantAnnouncements {
     return _announcementList.where((announcement) => 
-      announcement.prioritas == 'sedang'
+      announcement.prioritas == 'penting'
     ).toList();
   }
   
-  // Get Info Announcements (prioritas rendah)
+  // Get Info Announcements
   List<AnnouncementModel> get infoAnnouncements {
     return _announcementList.where((announcement) => 
-      announcement.prioritas == 'rendah'
+      announcement.prioritas == 'info'
     ).toList();
   }
   
