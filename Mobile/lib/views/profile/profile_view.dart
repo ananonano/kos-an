@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../controllers/auth_controller.dart';
+import '../../controllers/tenant_controller.dart';
 import '../../core/theme/app_theme.dart';
-import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
 import '../../routes/app_routes.dart';
 
 /// Profile View
@@ -111,6 +110,10 @@ class _ProfileViewState extends State<ProfileView> {
     final authController = context.watch<AuthController>();
     final user = authController.currentUser;
     final isAdmin = authController.isAdmin;
+    
+    // Get tenant info if available
+    final tenantController = context.watch<TenantController>();
+    final tenant = tenantController.selectedTenant;
 
     return Scaffold(
       appBar: AppBar(
@@ -126,158 +129,346 @@ class _ProfileViewState extends State<ProfileView> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
+        padding: EdgeInsets.zero,
+        child: Container(
+          width: double.infinity,
+          color: AppTheme.backgroundColor,
+          padding: const EdgeInsets.only(bottom: 40),
           child: Column(
             children: [
-              // Profile Picture
-              Center(
-                child: CircleAvatar(
-                  radius: 60,
-                  backgroundColor: AppTheme.primaryColor,
-                  child: Text(
-                    user?.nama.substring(0, 1).toUpperCase() ?? 'U',
-                    style: const TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Role Badge
+              // Profile Header Section
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                width: double.infinity,
+                padding: const EdgeInsets.only(top: 37, bottom: 37),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Avatar with Solid Brown Color
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x19000000),
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                            spreadRadius: -2,
+                          ),
+                          BoxShadow(
+                            color: Color(0x19000000),
+                            blurRadius: 6,
+                            offset: Offset(0, 4),
+                            spreadRadius: -1,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          user?.nama.substring(0, 2).toUpperCase() ?? 'U',
+                          style: AppTheme.displayText.copyWith(
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 19),
+                    
+                    // User Name
+                    Text(
+                      user?.nama ?? 'Pengguna',
+                      textAlign: TextAlign.center,
+                      style: AppTheme.heading2.copyWith(
+                        color: AppTheme.textPrimaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    
+                    // Role Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        isAdmin ? 'ADMIN' : 'PENGHUNI',
+                        textAlign: TextAlign.center,
+                        style: AppTheme.bodyText2.copyWith(
+                          color: AppTheme.accentColor,
+                          letterSpacing: 0.65,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                decoration: BoxDecoration(
-                  color: isAdmin ? AppTheme.primaryColor : AppTheme.successColor,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  isAdmin ? 'Admin' : 'Penghuni',
-                  style: AppTheme.bodyText1.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+              ),
+              
+              // Form Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 27),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      // Profile Info Card
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(19),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceColor,
+                          border: Border.all(width: 1, color: AppTheme.borderColor),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(17),
+                            topRight: Radius.circular(11),
+                            bottomLeft: Radius.circular(11),
+                            bottomRight: Radius.circular(17),
+                          ),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x0A000000),
+                              blurRadius: 16,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Stack(
+                          children: [
+                            // Left orange strip
+                            Positioned(
+                              left: -19,
+                              top: 9,
+                              bottom: 9,
+                              child: Container(
+                                width: 5,
+                                decoration: const BoxDecoration(
+                                  color: AppTheme.primaryColor,
+                                ),
+                              ),
+                            ),
+                            // Form Fields
+                            Padding(
+                              padding: const EdgeInsets.only(left: 5),
+                              child: Column(
+                                children: [
+                                  _buildFormField(
+                                    'NAMA LENGKAP',
+                                    user?.nama ?? '',
+                                    _namaController,
+                                    enabled: _isEditing,
+                                  ),
+                                  const SizedBox(height: 11),
+                                  _buildFormField(
+                                    'EMAIL',
+                                    user?.email ?? '',
+                                    _emailController,
+                                    enabled: false,
+                                    opacity: 0.7,
+                                  ),
+                                  const SizedBox(height: 11),
+                                  _buildFormField(
+                                    'NO. TELEPON',
+                                    user?.noTelepon ?? '',
+                                    _noTeleponController,
+                                    enabled: _isEditing,
+                                  ),
+                                  if (tenant != null && tenant.nomorKamar != null) ...[
+                                    const SizedBox(height: 11),
+                                    _buildFormField(
+                                      'NO. KAMAR',
+                                      'Room ${tenant.nomorKamar}',
+                                      null,
+                                      enabled: false,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 27),
+                      
+                      // Action Buttons
+                      if (_isEditing) ...[
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _updateProfile,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 19,
+                                    height: 19,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Text('Simpan Perubahan'),
+                          ),
+                        ),
+                        const SizedBox(height: 11),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setState(() {
+                                _isEditing = false;
+                                _loadUserData();
+                              });
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.textSecondaryColor,
+                              side: const BorderSide(color: AppTheme.borderColor),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            child: const Text('Batal'),
+                          ),
+                        ),
+                      ] else ...[
+                        // Logout Button
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: _logout,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.errorColor,
+                              side: const BorderSide(color: AppTheme.errorColor),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.logout, size: 19),
+                                SizedBox(width: 8),
+                                Text('Logout'),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
-
-              // Form Fields
-              CustomTextField(
-                controller: _namaController,
-                label: 'Nama Lengkap',
-                hint: 'Masukkan nama lengkap',
-                prefixIcon: Icons.person,
-                enabled: _isEditing,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Nama tidak boleh kosong';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              CustomTextField(
-                controller: _emailController,
-                label: 'Email',
-                hint: 'email@example.com',
-                prefixIcon: Icons.email,
-                enabled: false, // Email tidak bisa diubah
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 16),
-
-              CustomTextField(
-                controller: _noTeleponController,
-                label: 'No. Telepon',
-                hint: '08123456789',
-                prefixIcon: Icons.phone,
-                enabled: _isEditing,
-                keyboardType: TextInputType.phone,
-                validator: (value) {
-                  if (value != null && value.isNotEmpty) {
-                    if (value.length < 10) {
-                      return 'No. telepon minimal 10 digit';
-                    }
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 32),
-
-              // Action Buttons
-              if (_isEditing) ...[
-                CustomButton(
-                  text: 'Simpan Perubahan',
-                  onPressed: _updateProfile,
-                  isLoading: _isLoading,
-                ),
-                const SizedBox(height: 12),
-                CustomButton(
-                  text: 'Batal',
-                  onPressed: () {
-                    setState(() {
-                      _isEditing = false;
-                      _loadUserData(); // Reset form
-                    });
-                  },
-                  backgroundColor: Colors.grey,
-                ),
-              ] else ...[
-                // Info Cards
-                _buildInfoCard(
-                  'ID Pengguna',
-                  user?.id.toString() ?? '-',
-                  Icons.badge,
-                ),
-                const SizedBox(height: 12),
-                
-                if (!isAdmin && user?.noTelepon != null)
-                  _buildInfoCard(
-                    'No. Telepon',
-                    user!.noTelepon!,
-                    Icons.phone,
-                  ),
-                
-                const SizedBox(height: 32),
-
-                // Logout Button
-                CustomButton(
-                  text: 'Logout',
-                  onPressed: _logout,
-                  backgroundColor: AppTheme.errorColor,
-                  icon: Icons.logout,
-                ),
-              ],
             ],
           ),
         ),
       ),
     );
   }
-
-  Widget _buildInfoCard(String label, String value, IconData icon) {
-    return Card(
-      child: ListTile(
-        leading: Icon(icon, color: AppTheme.primaryColor),
-        title: Text(
-          label,
-          style: AppTheme.caption.copyWith(
-            color: Colors.grey[600],
+  
+  Widget _buildFormField(
+    String label,
+    String value,
+    TextEditingController? controller,
+    {bool enabled = true, double opacity = 1.0}
+  ) {
+    return Opacity(
+      opacity: opacity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: AppTheme.caption.copyWith(
+              letterSpacing: 1.10,
+            ),
           ),
-        ),
-        subtitle: Text(
-          value,
-          style: AppTheme.bodyText1,
-        ),
+          const SizedBox(height: 0.5),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: const BoxDecoration(
+              border: Border(
+                bottom: BorderSide(width: 1, color: AppTheme.borderColor),
+              ),
+            ),
+            child: controller != null
+                ? TextFormField(
+                    controller: controller,
+                    enabled: enabled,
+                    style: AppTheme.bodyText1.copyWith(
+                      color: enabled ? AppTheme.textPrimaryColor : AppTheme.textSecondaryColor,
+                    ),
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      filled: false,
+                    ),
+                  )
+                : Text(
+                    value,
+                    style: AppTheme.bodyText1.copyWith(
+                      color: enabled ? AppTheme.textPrimaryColor : AppTheme.textSecondaryColor,
+                    ),
+                  ),
+          ),
+        ],
       ),
     );
+  }
+  
+  Widget _buildInfoBox(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F3F1),
+        border: Border.all(width: 1, color: AppTheme.borderColor),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(17),
+          topRight: Radius.circular(11),
+          bottomLeft: Radius.circular(11),
+          bottomRight: Radius.circular(17),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: AppTheme.caption.copyWith(
+              color: AppTheme.textSecondaryColor,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: AppTheme.heading3,
+          ),
+        ],
+      ),
+    );
+  }
+  
+  String _calculateMonths(DateTime start, DateTime? end) {
+    final endDate = end ?? DateTime.now();
+    final months = (endDate.year - start.year) * 12 + (endDate.month - start.month);
+    return '$months Bulan';
+  }
+  
+  bool _isContractActive(DateTime endDate) {
+    return DateTime.now().isBefore(endDate);
   }
 }

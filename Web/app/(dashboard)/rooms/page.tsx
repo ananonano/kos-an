@@ -1,7 +1,7 @@
 ﻿"use client";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Pencil, Trash2, BedDouble, ImageIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, BedDouble } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
 import { RoomStatusBadge } from "@/components/shared/StatusBadge";
@@ -156,8 +156,8 @@ export default function RoomsPage() {
     {
       key: "nomor_kamar", header: "No. Kamar", render: (r: Room) => (
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-            <BedDouble className="w-4 h-4 text-blue-600" />
+          <div className="w-8 h-8 rounded-lg bg-[#FFF8F0] flex items-center justify-center">
+            <BedDouble className="w-4 h-4 text-[#A23900]" />
           </div>
           <span className="font-semibold">Kamar {r.nomor_kamar}</span>
         </div>
@@ -259,14 +259,6 @@ export default function RoomsPage() {
                 ))}
               </div>
               {errors.fasilitas && <p className="text-red-500 text-xs">{errors.fasilitas.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label>Foto Kamar</Label>
-              <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/30 transition-colors">
-                <ImageIcon className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">Klik untuk upload foto</p>
-                <p className="text-xs text-muted-foreground">PNG, JPG max 5MB</p>
-              </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Batal</Button>

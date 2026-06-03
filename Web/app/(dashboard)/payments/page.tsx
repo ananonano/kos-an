@@ -165,10 +165,10 @@ export default function PaymentsPage() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Total Pembayaran", value: summary.total, color: "text-blue-600" },
+          { label: "Total Pembayaran", value: summary.total, color: "text-[#A23900]" },
           { label: "Terverifikasi", value: summary.verified, color: "text-emerald-600" },
           { label: "Pending", value: summary.pending, color: "text-amber-600" },
-          { label: "Total Diterima", value: formatCurrency(summary.totalAmount), color: "text-purple-600" },
+          { label: "Total Diterima", value: formatCurrency(summary.totalAmount), color: "text-[#A23900]" },
         ].map((s) => (
           <Card key={s.label}>
             <CardContent className="pt-4 pb-4">

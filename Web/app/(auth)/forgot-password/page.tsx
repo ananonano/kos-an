@@ -57,7 +57,7 @@ export default function ForgotPasswordPage() {
               </div>
               {errors.email && <p className="text-red-400 text-xs">{errors.email.message}</p>}
             </div>
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" loading={isLoading}>
+            <Button type="submit" className="w-full bg-[#A23900] hover:bg-[#8B3500] text-white" loading={isLoading}>
               Kirim Link Reset
             </Button>
           </form>

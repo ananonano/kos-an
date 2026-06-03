@@ -1,6 +1,6 @@
 ﻿"use client";
 import { useState } from "react";
-import { Camera, Save, Lock } from "lucide-react";
+import { Save, Lock } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,21 +109,16 @@ export default function ProfilePage() {
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center gap-6">
-            <div className="relative">
-              <Avatar className="w-20 h-20">
-                <AvatarImage src={user?.avatar} />
-                <AvatarFallback className="bg-blue-600 text-white text-2xl font-bold">
-                  {user ? getInitials(user.name) : "A"}
-                </AvatarFallback>
-              </Avatar>
-              <button className="absolute bottom-0 right-0 w-7 h-7 bg-primary rounded-full flex items-center justify-center shadow-lg hover:bg-primary/90 transition-colors">
-                <Camera className="w-3.5 h-3.5 text-white" />
-              </button>
-            </div>
+            <Avatar className="w-20 h-20">
+              <AvatarImage src={user?.avatar} />
+              <AvatarFallback className="bg-[#A23900] text-white text-2xl font-bold">
+                {user ? getInitials(user.name) : "A"}
+              </AvatarFallback>
+            </Avatar>
             <div>
               <h3 className="font-semibold text-lg">{user?.name}</h3>
               <p className="text-muted-foreground text-sm">{user?.email}</p>
-              <span className="inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+              <span className="inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#FFF8F0] text-[#A23900]">
                 Admin
               </span>
             </div>

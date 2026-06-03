@@ -94,13 +94,24 @@ export class RoomController {
         });
       }
 
+      // Handle fasilitas - ensure it's an array
+      let fasilitasArray: string[] | undefined = undefined;
+      if (fasilitas) {
+        if (Array.isArray(fasilitas)) {
+          fasilitasArray = fasilitas;
+        } else if (typeof fasilitas === 'string') {
+          // If it's a string, split by comma
+          fasilitasArray = fasilitas.split(',').map((f: string) => f.trim()).filter((f: string) => f.length > 0);
+        }
+      }
+
       const room = await RoomModel.create({
         nomor_kamar,
         tipe,
         harga: parseFloat(harga),
         status: status || 'kosong',
         deskripsi,
-        fasilitas,
+        fasilitas: fasilitasArray,
         foto
       });
 
@@ -151,13 +162,24 @@ export class RoomController {
         }
       }
 
+      // Handle fasilitas - ensure it's an array
+      let fasilitasArray: string[] | undefined = undefined;
+      if (fasilitas !== undefined) {
+        if (Array.isArray(fasilitas)) {
+          fasilitasArray = fasilitas;
+        } else if (typeof fasilitas === 'string') {
+          // If it's a string, split by comma
+          fasilitasArray = fasilitas.split(',').map((f: string) => f.trim()).filter((f: string) => f.length > 0);
+        }
+      }
+
       const updateData: any = {};
       if (nomor_kamar !== undefined) updateData.nomor_kamar = nomor_kamar;
       if (tipe !== undefined) updateData.tipe = tipe;
       if (harga !== undefined) updateData.harga = parseFloat(harga);
       if (status !== undefined) updateData.status = status;
       if (deskripsi !== undefined) updateData.deskripsi = deskripsi;
-      if (fasilitas !== undefined) updateData.fasilitas = fasilitas;
+      if (fasilitasArray !== undefined) updateData.fasilitas = fasilitasArray;
       if (foto !== undefined) updateData.foto = foto;
 
       console.log('Update data:', updateData);

@@ -310,45 +310,6 @@ class _PaymentHistoryViewState extends State<PaymentHistoryView> with SingleTick
                 ),
               ),
             ],
-            
-            // Bukti Pembayaran (jika ada)
-            if (payment.buktiPembayaran != null) ...[
-              const SizedBox(height: 12),
-              InkWell(
-                onTap: () {
-                  // TODO: Show image viewer
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Bukti: ${payment.buktiPembayaran}'),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.shade200),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.image, size: 18, color: Colors.blue.shade700),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Lihat Bukti Pembayaran',
-                        style: TextStyle(
-                          color: Colors.blue.shade700,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
       ),

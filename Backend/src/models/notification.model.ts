@@ -9,7 +9,7 @@ export interface Notification {
   user_id: number;
   title: string;
   message: string;
-  type: 'announcement' | 'payment' | 'maintenance' | 'system';
+  type: 'announcement' | 'payment' | 'bill' | 'maintenance' | 'system';
   related_id?: number;
   is_read: boolean;
   created_at: Date;
@@ -22,7 +22,7 @@ export class NotificationModel {
     user_id: number;
     title: string;
     message: string;
-    type: 'announcement' | 'payment' | 'maintenance' | 'system';
+    type: 'announcement' | 'payment' | 'bill' | 'maintenance' | 'system';
     related_id?: number;
   }): Promise<Notification> {
     const query = `
@@ -49,7 +49,7 @@ export class NotificationModel {
     data: {
       title: string;
       message: string;
-      type: 'announcement' | 'payment' | 'maintenance' | 'system';
+      type: 'announcement' | 'payment' | 'bill' | 'maintenance' | 'system';
       related_id?: number;
     }
   ): Promise<void> {

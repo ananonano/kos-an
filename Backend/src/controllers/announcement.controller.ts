@@ -1,5 +1,5 @@
 ﻿import { Request, Response } from 'express';
-import { AnnouncementModel, NotificationModel } from '../models';
+import { AnnouncementModel } from '../models';
 
 export class AnnouncementController {
   /**
@@ -128,7 +128,8 @@ export class AnnouncementController {
   /**
    * Create new announcement
    * Admin only
-   * Also creates notifications for all tenants
+   * Announcements go to announcement table only, not notifications table
+   * Mobile app will show system notifications via polling service
    */
   static async create(req: Request, res: Response) {
     try {
@@ -151,18 +152,9 @@ export class AnnouncementController {
         created_by: createdBy
       });
 
-      // Create notifications for tenants
-      // Get all tenant user IDs
-      const tenantUserIds = await NotificationModel.getAllTenantUserIds();
-      
-      if (tenantUserIds.length > 0) {
-        await NotificationModel.createForMultipleUsers(tenantUserIds, {
-          title: '📢 Pengumuman Baru',
-          message: `${judul}`,
-          type: 'announcement',
-          related_id: announcement.id
-        });
-      }
+      // Note: Announcements are NOT added to notifications table
+      // They are fetched directly from announcements table
+      // System notifications (HP) are triggered by mobile app polling service
 
       return res.status(201).json({
         success: true,

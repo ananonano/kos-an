@@ -115,13 +115,7 @@ export class AnnouncementModel {
       FROM announcements a
       JOIN users u ON a.created_by = u.id
       ${whereClause}
-      ORDER BY 
-        CASE a.prioritas
-          WHEN 'urgent' THEN 1
-          WHEN 'penting' THEN 2
-          WHEN 'info' THEN 3
-        END,
-        a.created_at DESC
+      ORDER BY a.created_at DESC
       LIMIT $${paramCount} OFFSET $${paramCount + 1}
     `;
 
@@ -140,13 +134,7 @@ export class AnnouncementModel {
       JOIN users u ON a.created_by = u.id
       WHERE a.is_active = true 
         AND (a.target = $1 OR a.target = 'semua')
-      ORDER BY 
-        CASE a.prioritas
-          WHEN 'urgent' THEN 1
-          WHEN 'penting' THEN 2
-          WHEN 'info' THEN 3
-        END,
-        a.created_at DESC
+      ORDER BY a.created_at DESC
     `;
 
         const result = await pool.query(query, [target]);
@@ -370,13 +358,7 @@ export class AnnouncementModel {
       JOIN users u ON a.created_by = u.id
       LEFT JOIN user_announcement_reads uar ON uar.announcement_id = a.id AND uar.user_id = $1
       ${whereClause}
-      ORDER BY 
-        CASE a.prioritas
-          WHEN 'urgent' THEN 1
-          WHEN 'penting' THEN 2
-          WHEN 'info' THEN 3
-        END,
-        a.created_at DESC
+      ORDER BY a.created_at DESC
       LIMIT $${paramCount} OFFSET $${paramCount + 1}
     `;
 

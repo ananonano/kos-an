@@ -242,6 +242,34 @@ export class PaymentController {
 
       const payment = await PaymentModel.verify(parseInt(id), verifiedBy, keterangan);
 
+      // 🔔 Create notification for tenant
+      const { NotificationModel } = await import('../models');
+      const { pool } = await import('../config/database');
+      
+      // Get tenant's user_id
+      const tenantResult = await pool.query(
+        'SELECT user_id FROM tenants WHERE id = $1',
+        [existingPayment.tenant_id]
+      );
+
+      if (tenantResult.rows.length > 0) {
+        const userId = tenantResult.rows[0].user_id;
+        const formattedAmount = new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+          minimumFractionDigits: 0
+        }).format(existingPayment.jumlah);
+
+        await NotificationModel.create({
+          user_id: userId,
+          type: 'payment',
+          title: 'Pembayaran Diverifikasi',
+          message: `Pembayaran Anda sebesar ${formattedAmount} telah diverifikasi oleh admin.`,
+          related_id: parseInt(id)
+        });
+        console.log(`✅ [PaymentController] Notification created for payment verified: user_id=${userId}`);
+      }
+
       return res.json({
         success: true,
         message: 'Pembayaran berhasil diverifikasi',
@@ -289,6 +317,34 @@ export class PaymentController {
       }
 
       const payment = await PaymentModel.reject(parseInt(id), verifiedBy, keterangan);
+
+      // 🔔 Create notification for tenant
+      const { NotificationModel } = await import('../models');
+      const { pool } = await import('../config/database');
+      
+      // Get tenant's user_id
+      const tenantResult = await pool.query(
+        'SELECT user_id FROM tenants WHERE id = $1',
+        [existingPayment.tenant_id]
+      );
+
+      if (tenantResult.rows.length > 0) {
+        const userId = tenantResult.rows[0].user_id;
+        const formattedAmount = new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+          minimumFractionDigits: 0
+        }).format(existingPayment.jumlah);
+
+        await NotificationModel.create({
+          user_id: userId,
+          type: 'payment',
+          title: 'Pembayaran Ditolak',
+          message: `Pembayaran sebesar ${formattedAmount} ditolak. Alasan: ${keterangan}`,
+          related_id: parseInt(id)
+        });
+        console.log(`✅ [PaymentController] Notification created for payment rejected: user_id=${userId}`);
+      }
 
       return res.json({
         success: true,

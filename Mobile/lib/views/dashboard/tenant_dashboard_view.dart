@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/tenant_controller.dart';
 import '../../controllers/bill_controller.dart';
-import '../../routes/app_routes.dart';
 
 class TenantDashboardView extends StatefulWidget {
   const TenantDashboardView({super.key});
@@ -57,41 +55,33 @@ class _TenantDashboardViewState extends State<TenantDashboardView> {
       onRefresh: _loadData,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header/Greeting Section
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppTheme.primaryColor,
-                    AppTheme.primaryColor.withValues(alpha: 0.7)
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
+              padding: const EdgeInsets.only(top: 37, left: 27, right: 27, bottom: 27),
+              decoration: const BoxDecoration(
+                color: AppTheme.primaryColor,
               ),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, size: 36, color: AppTheme.primaryColor),
-                  ),
-                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Halo,', style: TextStyle(color: Colors.white70, fontSize: 14)),
-                        const SizedBox(height: 4),
                         Text(
-                          user?.nama ?? 'Penghuni',
-                          style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                          'Halo, ${user?.nama ?? 'Penghuni'}! 🔑',
+                          style: AppTheme.heading2.copyWith(color: Colors.white),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          'Selamat datang kembali',
+                          style: AppTheme.bodyText2.copyWith(color: Colors.white70),
                         ),
                       ],
                     ),
@@ -99,51 +89,186 @@ class _TenantDashboardViewState extends State<TenantDashboardView> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-
-            if (tenant != null && tenant.nomorKamar != null) ...[
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Informasi Kamar', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      const Divider(height: 24),
-                      Text('Nomor Kamar: ${tenant.nomorKamar ?? '-'}'),
-                      const SizedBox(height: 8),
-                      Text('Tanggal Masuk: ${tenant.tanggalMasuk != null ? DateFormat('dd MMM yyyy').format(tenant.tanggalMasuk!) : '-'}'),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            if (daysUntilContractEnd != null) ...[
-              Card(
-                color: daysUntilContractEnd < 30 ? Colors.orange.shade50 : Colors.green.shade50,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      const Text('Masa Kontrak', style: TextStyle(fontSize: 14, color: Colors.grey)),
-                      Text('$daysUntilContractEnd hari lagi', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
+            
+            // Unpaid Bills Warning (if exists)
             if (unpaidBills.isNotEmpty) ...[
-              Card(
-                color: Colors.red.shade50,
-                child: ListTile(
-                  leading: const Icon(Icons.warning, color: Colors.red),
-                  title: const Text('Tagihan Belum Lunas'),
-                  subtitle: Text('${unpaidBills.length} Tagihan'),
-                  onTap: () => Navigator.pushNamed(context, AppRoutes.billList),
+              Transform.translate(
+                offset: const Offset(27, -10),
+                child: Container(
+                  width: MediaQuery.of(context).size.width - 54,
+                  padding: const EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(width: 1, color: AppTheme.borderColor),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0F000000),
+                        blurRadius: 16,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 27,
+                        height: 27,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(Icons.warning_amber, color: AppTheme.primaryColor, size: 19),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${unpaidBills.length} TAGIHAN BELUM LUNAS',
+                          style: AppTheme.smallText.copyWith(
+                            color: AppTheme.primaryColor,
+                            letterSpacing: 0.55,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
+            // Room Info Card
+            if (tenant != null && tenant.nomorKamar != null) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 37, left: 27, right: 27),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(27),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(width: 1, color: AppTheme.borderColor),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(27),
+                      bottomRight: Radius.circular(11),
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0F000000),
+                        blurRadius: 16,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      // Left orange strip
+                      Positioned(
+                        left: -27,
+                        top: -27,
+                        bottom: -27,
+                        child: Container(
+                          width: 5,
+                          decoration: const BoxDecoration(
+                            color: AppTheme.primaryColor,
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(27),
+                              bottomLeft: Radius.circular(11),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'ROOM NUMBER',
+                                      style: AppTheme.bodyText2.copyWith(
+                                        letterSpacing: 1.30,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      tenant.nomorKamar ?? '-',
+                                      style: AppTheme.displayText.copyWith(
+                                        color: AppTheme.primaryColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      'Premium Room',
+                                      style: AppTheme.bodyText1,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.meeting_room, color: AppTheme.primaryColor, size: 27),
+                              ),
+                            ],
+                          ),
+                          if (daysUntilContractEnd != null) ...[
+                            const SizedBox(height: 19),
+                            Container(
+                              padding: const EdgeInsets.only(top: 19),
+                              decoration: const BoxDecoration(
+                                border: Border(
+                                  top: BorderSide(width: 1, color: AppTheme.borderColor),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 27,
+                                    height: 27,
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.accentColor.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Icon(Icons.event, color: AppTheme.accentColor, size: 19),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text.rich(
+                                      TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text: 'Sisa Kontrak: ',
+                                            style: AppTheme.bodyText2,
+                                          ),
+                                          TextSpan(
+                                            text: '$daysUntilContractEnd Hari',
+                                            style: AppTheme.bodyText2.copyWith(
+                                              color: daysUntilContractEnd < 30 
+                                                  ? AppTheme.warningColor 
+                                                  : AppTheme.primaryColor,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

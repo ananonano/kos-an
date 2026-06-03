@@ -56,13 +56,13 @@ export function Sidebar() {
         animate={{ width: sidebarCollapsed ? 64 : 256 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
         className={cn(
-          "fixed left-0 top-0 z-50 h-full bg-slate-900 dark:bg-slate-950 flex flex-col border-r border-slate-800 overflow-hidden",
+          "fixed left-0 top-0 z-50 h-full bg-[#7A2E00] dark:bg-[#5A2200] flex flex-col border-r border-[#8B3500] overflow-hidden",
           "lg:translate-x-0 transition-transform duration-300",
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
         {/* Logo */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-slate-800 shrink-0">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-[#8B3500] shrink-0">
           <AnimatePresence mode="wait">
             {!sidebarCollapsed && (
               <motion.div
@@ -70,28 +70,28 @@ export function Sidebar() {
                 exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}
                 className="flex items-center gap-2"
               >
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-[#A23900] flex items-center justify-center shrink-0">
                   <Building2 className="w-4 h-4 text-white" />
                 </div>
                 <div>
                   <p className="text-white font-bold text-sm leading-none">KosTerpadu</p>
-                  <p className="text-slate-400 text-xs">Admin Panel</p>
+                  <p className="text-orange-200 text-xs">Admin Panel</p>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
           {sidebarCollapsed && (
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mx-auto">
+            <div className="w-8 h-8 rounded-lg bg-[#A23900] flex items-center justify-center mx-auto">
               <Building2 className="w-4 h-4 text-white" />
             </div>
           )}
           <button
             onClick={() => { toggleCollapse(); setSidebarOpen(false); }}
-            className="hidden lg:flex items-center justify-center w-6 h-6 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="hidden lg:flex items-center justify-center w-6 h-6 rounded-md text-orange-200 hover:text-white hover:bg-[#8B3500] transition-colors"
           >
             {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white">
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-orange-200 hover:text-white">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -108,11 +108,11 @@ export function Sidebar() {
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group",
                     active
-                      ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-                      : "text-slate-400 hover:text-white hover:bg-slate-800"
+                      ? "bg-[#A23900] text-white shadow-lg shadow-[#A23900]/20"
+                      : "text-orange-200 hover:text-white hover:bg-[#8B3500]"
                   )}
                 >
-                  <Icon className={cn("w-5 h-5 shrink-0", active ? "text-white" : "text-slate-400 group-hover:text-white")} />
+                  <Icon className={cn("w-5 h-5 shrink-0", active ? "text-white" : "text-orange-200 group-hover:text-white")} />
                   <AnimatePresence mode="wait">
                     {!sidebarCollapsed && (
                       <motion.span
@@ -129,7 +129,7 @@ export function Sidebar() {
             );
           })}
 
-          <div className="my-2 border-t border-slate-800" />
+          <div className="my-2 border-t border-[#8B3500]" />
 
           {bottomItems.map((item) => {
             const Icon = item.icon;
@@ -140,7 +140,7 @@ export function Sidebar() {
                   whileHover={{ x: 2 }}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group",
-                    active ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"
+                    active ? "bg-[#A23900] text-white" : "text-orange-200 hover:text-white hover:bg-[#8B3500]"
                   )}
                 >
                   <Icon className="w-5 h-5 shrink-0" />
@@ -153,15 +153,15 @@ export function Sidebar() {
 
         {/* User */}
         {!sidebarCollapsed && user && (
-          <div className="p-4 border-t border-slate-800">
+          <div className="p-4 border-t border-[#8B3500]">
             <div className="flex items-center gap-3">
               <Avatar className="w-8 h-8 shrink-0">
                 <AvatarImage src={user.avatar} />
-                <AvatarFallback className="bg-blue-600 text-white text-xs">{getInitials(user.name)}</AvatarFallback>
+                <AvatarFallback className="bg-[#A23900] text-white text-xs">{getInitials(user.name)}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="text-white text-sm font-medium truncate">{user.name}</p>
-                <p className="text-slate-400 text-xs truncate">{user.email}</p>
+                <p className="text-orange-200 text-xs truncate">{user.email}</p>
               </div>
             </div>
           </div>

@@ -198,7 +198,7 @@ export default function TenantsPage() {
       key: "user", header: "Penghuni", render: (t: any) => (
         <div className="flex items-center gap-3">
           <Avatar className="w-9 h-9">
-            <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">{getInitials(t.nama || "")}</AvatarFallback>
+            <AvatarFallback className="bg-[#FFF8F0] text-[#A23900] text-xs font-semibold">{getInitials(t.nama || "")}</AvatarFallback>
           </Avatar>
           <div>
             <p className="font-medium text-sm">{t.nama}</p>

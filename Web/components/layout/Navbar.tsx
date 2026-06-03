@@ -71,7 +71,7 @@ export function Navbar() {
             <Button variant="ghost" className="flex items-center gap-2 px-2">
               <Avatar className="w-8 h-8">
                 <AvatarImage src={user?.avatar} />
-                <AvatarFallback className="bg-blue-600 text-white text-xs">
+                <AvatarFallback className="bg-[#A23900] text-white text-xs">
                   {user ? getInitials(user.name) : "A"}
                 </AvatarFallback>
               </Avatar>

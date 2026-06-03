@@ -44,27 +44,30 @@ export default function LoginPage() {
       className="w-full"
     >
       {/* Card */}
-      <div className="bg-white/10 dark:bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-2xl">
+      <div className="bg-white/10 dark:bg-white/5 backdrop-blur-xl border border-white/20 rounded-[17px] p-8 shadow-2xl relative overflow-hidden">
+        {/* Subtle accent */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[#F4B942]/10 rounded-full blur-2xl -mr-16 -mt-16"></div>
+        
         {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-500/30 mb-4">
+        <div className="flex flex-col items-center mb-8 relative z-10">
+          <div className="w-14 h-14 rounded-[17px] bg-gradient-to-br from-[#A23900] to-[#8B3500] flex items-center justify-center shadow-lg shadow-[#A23900]/30 mb-4">
             <Building2 className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">KosTerpadu</h1>
-          <p className="text-slate-400 text-sm mt-1">Admin Panel  Masuk ke akun Anda</p>
+          <h1 className="text-2xl font-bold text-white">Selamat Datang</h1>
+          <p className="text-slate-400 text-sm mt-1">Login ke akun Anda</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           {/* Email */}
           <div className="space-y-2">
-            <Label className="text-slate-300 text-sm">Email</Label>
+            <Label className="text-white text-sm">Email</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" />
               <Input
                 {...register("email")}
                 type="email"
                 placeholder="admin@kosterpadu.com"
-                className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-slate-500 focus-visible:ring-blue-500"
+                className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-[#A23900]"
               />
             </div>
             {errors.email && <p className="text-red-400 text-xs">{errors.email.message}</p>}
@@ -73,23 +76,23 @@ export default function LoginPage() {
           {/* Password */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-slate-300 text-sm">Password</Label>
-              <Link href="/forgot-password" className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
+              <Label className="text-white text-sm">Password</Label>
+              <Link href="/forgot-password" className="text-xs text-[#FFB347] hover:text-[#F4B942] transition-colors">
                 Lupa password?
               </Link>
             </div>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" />
               <Input
                 {...register("password")}
                 type={showPassword ? "text" : "password"}
-                placeholder=""
-                className="pl-10 pr-10 bg-white/10 border-white/20 text-white placeholder:text-slate-500 focus-visible:ring-blue-500"
+                placeholder="••••••••"
+                className="pl-10 pr-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-[#A23900]"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -108,13 +111,13 @@ export default function LoginPage() {
           )}
 
           {/* Demo hint */}
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg px-4 py-3">
-            <p className="text-blue-300 text-xs font-medium">Demo credentials:</p>
-            <p className="text-blue-400 text-xs">admin@kosterpadu.com / admin123</p>
+          <div className="bg-[#A23900]/10 border border-[#A23900]/20 rounded-lg px-4 py-3">
+            <p className="text-[#FFB347] text-xs font-medium">Demo credentials:</p>
+            <p className="text-[#F4B942] text-xs">admin@kosterpadu.com / admin123</p>
           </div>
 
-          <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white h-10" loading={isLoading}>
-            {isLoading ? "Masuk..." : "Masuk"}
+          <Button type="submit" className="w-full bg-[#A23900] hover:bg-[#8B3500] text-white h-10" loading={isLoading}>
+            {isLoading ? "Masuk..." : "Login"}
           </Button>
         </form>
       </div>

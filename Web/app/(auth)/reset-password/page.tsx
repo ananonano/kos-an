@@ -56,7 +56,7 @@ export default function ResetPasswordPage() {
             </div>
             <p className="text-white font-medium">Password berhasil direset!</p>
             <Link href="/login">
-              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-2">Masuk Sekarang</Button>
+              <Button className="w-full bg-[#A23900] hover:bg-[#8B3500] text-white mt-2">Masuk Sekarang</Button>
             </Link>
           </div>
         ) : (
@@ -83,7 +83,7 @@ export default function ResetPasswordPage() {
               </div>
               {errors.confirmPassword && <p className="text-red-400 text-xs">{errors.confirmPassword.message}</p>}
             </div>
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" loading={isLoading}>
+            <Button type="submit" className="w-full bg-[#A23900] hover:bg-[#8B3500] text-white" loading={isLoading}>
               Reset Password
             </Button>
           </form>

@@ -139,6 +139,34 @@ export class BillController {
         catatan
       });
 
+      // 🔔 Create notification for tenant
+      const { NotificationModel } = await import('../models');
+      const { pool } = await import('../config/database');
+      
+      // Get tenant's user_id
+      const tenantResult = await pool.query(
+        'SELECT user_id FROM tenants WHERE id = $1',
+        [parseInt(tenant_id)]
+      );
+
+      if (tenantResult.rows.length > 0) {
+        const userId = tenantResult.rows[0].user_id;
+        const formattedAmount = new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+          minimumFractionDigits: 0
+        }).format(parseFloat(jumlah));
+
+        await NotificationModel.create({
+          user_id: userId,
+          type: 'bill',
+          title: 'Tagihan Baru',
+          message: `Tagihan bulan ${bulan} ${tahun} sebesar ${formattedAmount} telah dibuat. Jatuh tempo: ${new Date(jatuh_tempo).toLocaleDateString('id-ID')}`,
+          related_id: bill.id
+        });
+        console.log(`✅ [BillController] Notification created for new bill: user_id=${userId}`);
+      }
+
       return res.status(201).json({
         success: true,
         message: 'Tagihan berhasil dibuat',

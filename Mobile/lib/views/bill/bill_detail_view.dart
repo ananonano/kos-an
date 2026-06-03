@@ -10,7 +10,7 @@ import '../../routes/app_routes.dart';
 class BillDetailView extends StatefulWidget {
   final String billId;
   
-  const BillDetailView({Key? key, required this.billId}) : super(key: key);
+  const BillDetailView({super.key, required this.billId});
 
   @override
   State<BillDetailView> createState() => _BillDetailViewState();
@@ -31,8 +31,22 @@ class _BillDetailViewState extends State<BillDetailView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Detail Tagihan'),
+        backgroundColor: AppTheme.backgroundColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFFA23900)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Detail Tagihan',
+          style: TextStyle(
+            color: Color(0xFF1A1A1A),
+            fontSize: 19,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
       body: Consumer<BillController>(
         builder: (context, billController, child) {
@@ -50,7 +64,6 @@ class _BillDetailViewState extends State<BillDetailView> {
                   Text(
                     billController.errorMessage!,
                     textAlign: TextAlign.center,
-                    style: AppTheme.bodyText1,
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
@@ -72,119 +85,301 @@ class _BillDetailViewState extends State<BillDetailView> {
           final dateFormat = DateFormat('dd MMMM yyyy', 'id_ID');
           
           Color statusColor;
-          IconData statusIcon;
+          String statusText;
           
           switch (bill.status) {
             case 'lunas':
-              statusColor = Colors.green;
-              statusIcon = Icons.check_circle;
+              statusColor = const Color(0xFF00C9A7);
+              statusText = 'LUNAS';
               break;
             case 'terlambat':
-              statusColor = Colors.red;
-              statusIcon = Icons.warning;
+              statusColor = const Color(0xFFE84C3D);
+              statusText = 'TERLAMBAT';
               break;
             default:
-              statusColor = Colors.orange;
-              statusIcon = Icons.pending;
+              statusColor = const Color(0xFFC77DFF);
+              statusText = 'PENDING';
           }
           
           final totalBayar = bill.jumlah + (bill.denda ?? 0);
           
           return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Status Card
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: statusColor,
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(24),
-                      bottomRight: Radius.circular(24),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(statusIcon, size: 64, color: Colors.white),
-                      const SizedBox(height: 12),
-                      Text(
-                        bill.status.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 51, left: 27, right: 27, bottom: 37),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Card Total Amount dengan Left Strip
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF8F0),
+                      border: Border.all(width: 1, color: const Color(0xFFE8DED2)),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(17),
+                        topRight: Radius.circular(11),
+                        bottomLeft: Radius.circular(11),
+                        bottomRight: Radius.circular(17),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${bill.bulan} ${bill.tahun}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(height: 24),
-                
-                // Detail Tagihan
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Detail Tagihan', style: AppTheme.heading2),
-                      const SizedBox(height: 16),
-                      
-                      _buildDetailRow('Periode', '${bill.bulan} ${bill.tahun}'),
-                      _buildDetailRow('Jumlah Tagihan', currencyFormat.format(bill.jumlah)),
-                      
-                      if (bill.denda != null && bill.denda! > 0)
-                        _buildDetailRow(
-                          'Denda Keterlambatan', 
-                          currencyFormat.format(bill.denda),
-                          valueColor: Colors.red,
-                        ),
-                      
-                      const Divider(height: 32),
-                      
-                      _buildDetailRow(
-                        'Total yang Harus Dibayar', 
-                        currencyFormat.format(totalBayar),
-                        isTotal: true,
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      _buildDetailRow('Jatuh Tempo', dateFormat.format(bill.jatuhTempo)),
-                      
-                      if (bill.catatan != null && bill.catatan!.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        Text('Catatan:', style: AppTheme.bodyText1.copyWith(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(bill.catatan!, style: AppTheme.bodyText2),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x14000000),
+                          blurRadius: 16,
+                          offset: Offset(0, 4),
                         ),
                       ],
-                      
-                      const SizedBox(height: 32),
-                      
+                    ),
+                    child: Stack(
+                      children: [
+                        // Content
+                        Padding(
+                          padding: const EdgeInsets.all(27),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Total Amount Section
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'TOTAL YANG HARUS DIBAYAR',
+                                    style: TextStyle(
+                                      color: Color(0xFF58423A),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w400,
+                                      height: 1.27,
+                                      letterSpacing: 0.55,
+                                    ),
+                                  ),
+                                  SizedBox(height: 5),
+                                  Text(
+                                    currencyFormat.format(totalBayar),
+                                    style: TextStyle(
+                                      color: Color(0xFFA23900),
+                                      fontSize: 37,
+                                      fontWeight: FontWeight.w800,
+                                      height: 1,
+                                      letterSpacing: -0.37,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 19),
+                              // Status Section
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        statusText,
+                                        style: TextStyle(
+                                          color: statusColor,
+                                          fontSize: 19,
+                                          fontWeight: FontWeight.w600,
+                                          height: 1.26,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (bill.status == 'lunas') ...[
+                                    SizedBox(height: 5),
+                                    Text(
+                                      'Dibayar pada ${dateFormat.format(DateTime.now())}',
+                                      style: TextStyle(
+                                        color: Color(0xFF58423A),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w400,
+                                        height: 1.38,
+                                        letterSpacing: 0.13,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Left Green Strip
+                        Positioned(
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          child: Container(
+                            width: 5,
+                            decoration: BoxDecoration(
+                              color: statusColor,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(17),
+                                bottomLeft: Radius.circular(11),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  SizedBox(height: 37),
+                  
+                  // Info Card - Periode & Jatuh Tempo
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(19),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(width: 1, color: const Color(0xFFE8DED2)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        // Periode Tagihan
+                        Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: const Color(0x19A23900),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(Icons.calendar_today, size: 16, color: Color(0xFFA23900)),
+                            ),
+                            SizedBox(width: 11),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Periode Tagihan',
+                                  style: TextStyle(
+                                    color: Color(0xFF58423A),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w400,
+                                    height: 1.27,
+                                    letterSpacing: 0.22,
+                                  ),
+                                ),
+                                Text(
+                                  '${bill.bulan} ${bill.tahun}',
+                                  style: TextStyle(
+                                    color: Color(0xFF1A1A1A),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.47,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Container(
+                          height: 1,
+                          margin: EdgeInsets.symmetric(horizontal: 8, vertical: 11),
+                          decoration: BoxDecoration(color: Color(0xFFE8DED2)),
+                        ),
+                        // Jatuh Tempo
+                        Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: const Color(0x19046670),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(Icons.event, size: 16, color: Color(0xFF046670)),
+                            ),
+                            SizedBox(width: 11),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Jatuh Tempo',
+                                  style: TextStyle(
+                                    color: Color(0xFF58423A),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w400,
+                                    height: 1.27,
+                                    letterSpacing: 0.22,
+                                  ),
+                                ),
+                                Text(
+                                  dateFormat.format(bill.jatuhTempo),
+                                  style: TextStyle(
+                                    color: Color(0xFF1A1A1A),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.47,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Catatan (jika ada)
+                  if (bill.catatan != null && bill.catatan!.isNotEmpty) ...[
+                    SizedBox(height: 19),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(19),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF4F3F1),
+                        border: Border.all(width: 4, color: const Color(0xFFA23900)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Catatan',
+                            style: TextStyle(
+                              color: Color(0xFF1A1A1A),
+                              fontSize: 19,
+                              fontWeight: FontWeight.w600,
+                              height: 1.26,
+                            ),
+                          ),
+                          SizedBox(height: 5),
+                          Text(
+                            bill.catatan!,
+                            style: TextStyle(
+                              color: Color(0xFF58423A),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w400,
+                              height: 1.47,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  
+                  SizedBox(height: 37),
+                  
+                  // Buttons
+                  Column(
+                    children: [
                       // Tombol Bayar (jika belum lunas)
                       if (bill.status != 'lunas')
-                        SizedBox(
+                        Container(
                           width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton.icon(
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFA23900),
+                            borderRadius: BorderRadius.circular(6),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x0C000000),
+                                blurRadius: 2,
+                                offset: Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: TextButton(
                             onPressed: () {
                               Navigator.pushNamed(
                                 context,
@@ -192,24 +387,35 @@ class _BillDetailViewState extends State<BillDetailView> {
                                 arguments: bill.id,
                               );
                             },
-                            icon: const Icon(Icons.payment),
-                            label: const Text('Bayar Sekarang'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryColor,
+                            style: TextButton.styleFrom(
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            child: Text(
+                              'Bayar Sekarang',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 19,
+                                fontWeight: FontWeight.w600,
+                                height: 1.26,
                               ),
                             ),
                           ),
                         ),
                       
-                      const SizedBox(height: 16),
+                      if (bill.status != 'lunas') SizedBox(height: 11),
                       
-                      // Tombol Lihat Riwayat Pembayaran
-                      SizedBox(
+                      // Tombol Riwayat Pembayaran
+                      Container(
                         width: double.infinity,
-                        height: 50,
-                        child: OutlinedButton.icon(
+                        height: 52,
+                        decoration: BoxDecoration(
+                          border: Border.all(width: 2, color: const Color(0xFFA23900)),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: TextButton(
                           onPressed: () {
                             Navigator.pushNamed(
                               context,
@@ -217,50 +423,32 @@ class _BillDetailViewState extends State<BillDetailView> {
                               arguments: bill.id,
                             );
                           },
-                          icon: const Icon(Icons.history),
-                          label: const Text('Riwayat Pembayaran'),
-                          style: OutlinedButton.styleFrom(
+                          style: TextButton.styleFrom(
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          child: Text(
+                            'Riwayat Pembayaran',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xFFA23900),
+                              fontSize: 19,
+                              fontWeight: FontWeight.w600,
+                              height: 1.26,
                             ),
                           ),
                         ),
                       ),
-                      
-                      const SizedBox(height: 32),
                     ],
                   ),
-                ),
-              ],
+                  
+                  SizedBox(height: 32),
+                ],
+              ),
             ),
           );
         },
-      ),
-    );
-  }
-  
-  Widget _buildDetailRow(String label, String value, {Color? valueColor, bool isTotal = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: isTotal 
-              ? AppTheme.bodyText1.copyWith(fontWeight: FontWeight.bold, fontSize: 16)
-              : AppTheme.bodyText1,
-          ),
-          Text(
-            value,
-            style: isTotal
-              ? AppTheme.heading3.copyWith(color: AppTheme.primaryColor)
-              : AppTheme.bodyText1.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: valueColor,
-                ),
-          ),
-        ],
       ),
     );
   }

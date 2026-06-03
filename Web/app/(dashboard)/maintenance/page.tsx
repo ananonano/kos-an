@@ -1,6 +1,6 @@
 ﻿"use client";
 import { useState, useEffect } from "react";
-import { Wrench, Plus, ChevronDown, ChevronUp, ImageIcon } from "lucide-react";
+import { Wrench, Plus, ChevronDown, ChevronUp, ImageIcon, User, Home, Calendar } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { MaintenanceStatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -130,9 +130,9 @@ export default function MaintenancePage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Total Keluhan", value: summary.total, color: "text-blue-600" },
+          { label: "Total Keluhan", value: summary.total, color: "text-[#A23900]" },
           { label: "Pending", value: summary.pending, color: "text-amber-600" },
-          { label: "Diproses", value: summary.in_progress, color: "text-blue-600" },
+          { label: "Diproses", value: summary.in_progress, color: "text-[#A23900]" },
           { label: "Selesai", value: summary.completed, color: "text-emerald-600" },
         ].map((s) => (
           <Card key={s.label}><CardContent className="pt-4 pb-4">
@@ -171,9 +171,9 @@ export default function MaintenancePage() {
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">{report.deskripsi}</p>
                     <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                      <span>👤 {report.nama_tenant || "-"}</span>
-                      <span>🏠 Kamar {report.nomor_kamar || "-"}</span>
-                      <span>🕐 {report.tanggal_lapor ? timeAgo(report.tanggal_lapor) : "-"}</span>
+                      <span className="flex items-center gap-1"><User className="w-3 h-3" /> {report.nama_tenant || "-"}</span>
+                      <span className="flex items-center gap-1"><Home className="w-3 h-3" /> Kamar {report.nomor_kamar || "-"}</span>
+                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {report.tanggal_lapor ? timeAgo(report.tanggal_lapor) : "-"}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -202,7 +202,7 @@ export default function MaintenancePage() {
                       <p className="text-sm text-muted-foreground">Belum ada komentar</p>
                     ) : (
                       <div className="flex gap-3 text-sm">
-                        <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                        <div className="w-2 h-2 rounded-full bg-[#A23900] mt-1.5 shrink-0" />
                         <div>
                           <p>{report.komentar_admin}</p>
                           <p className="text-xs text-muted-foreground">{report.updated_at ? timeAgo(report.updated_at) : "-"}</p>

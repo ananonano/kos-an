@@ -6,10 +6,8 @@ import '../../core/theme/app_theme.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/app_drawer.dart';
 
-/// Announcement List View
-/// Tampilan daftar pengumuman
 class AnnouncementListView extends StatefulWidget {
-  const AnnouncementListView({Key? key}) : super(key: key);
+  const AnnouncementListView({super.key});
 
   @override
   State<AnnouncementListView> createState() => _AnnouncementListViewState();
@@ -30,14 +28,24 @@ class _AnnouncementListViewState extends State<AnnouncementListView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Pengumuman'),
+        backgroundColor: AppTheme.primaryColor,
+        elevation: 0,
         leading: Builder(
           builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
+            icon: const Icon(Icons.menu, color: Colors.white, size: 24),
             onPressed: () {
               Scaffold.of(context).openDrawer();
             },
+          ),
+        ),
+        title: const Text(
+          'Announcements',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 23,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -58,7 +66,6 @@ class _AnnouncementListViewState extends State<AnnouncementListView> {
                   Text(
                     announcementController.errorMessage!,
                     textAlign: TextAlign.center,
-                    style: AppTheme.bodyText1,
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
@@ -73,16 +80,13 @@ class _AnnouncementListViewState extends State<AnnouncementListView> {
           final announcements = announcementController.announcements;
           
           if (announcements.isEmpty) {
-            return Center(
+            return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.campaign_outlined, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Belum ada pengumuman',
-                    style: AppTheme.bodyText1.copyWith(color: Colors.grey),
-                  ),
+                  SizedBox(height: 16),
+                  Text('Belum ada pengumuman'),
                 ],
               ),
             );
@@ -91,11 +95,11 @@ class _AnnouncementListViewState extends State<AnnouncementListView> {
           return RefreshIndicator(
             onRefresh: _loadAnnouncements,
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(27),
               itemCount: announcements.length,
               itemBuilder: (context, index) {
                 final announcement = announcements[index];
-                return _buildAnnouncementCard(announcement);
+                return _buildCard(announcement);
               },
             ),
           );
@@ -104,195 +108,129 @@ class _AnnouncementListViewState extends State<AnnouncementListView> {
     );
   }
   
-  Widget _buildAnnouncementCard(announcement) {
-    final dateFormat = DateFormat('dd MMM yyyy, HH:mm', 'id_ID');
+  Widget _buildCard(dynamic announcement) {
+    final dateFormat = DateFormat('MMM dd, hh:mm a', 'en_US');
     
-    Color priorityColor;
-    IconData priorityIcon;
-    String priorityBadge;
+    Color borderColor;
+    double borderWidth;
+    Color bgColor;
+    Color iconBgColor;
+    IconData icon;
     
-    switch (announcement.prioritas) {
+    switch (announcement.prioritas.toLowerCase()) {
       case 'urgent':
-        priorityColor = Colors.red;
-        priorityIcon = Icons.warning;
-        priorityBadge = 'Urgent';
+        borderColor = const Color(0xFFE86A33);
+        borderWidth = 5;
+        bgColor = const Color(0xFFFFE5E5);
+        iconBgColor = const Color(0x19A23900);
+        icon = Icons.warning_amber_rounded;
         break;
       case 'penting':
-        priorityColor = Colors.orange;
-        priorityIcon = Icons.priority_high;
-        priorityBadge = 'Penting';
+        borderColor = const Color(0xFFFFB347);
+        borderWidth = 5;
+        bgColor = const Color(0xFFFFF4E5);
+        iconBgColor = const Color(0x197C5800);
+        icon = Icons.priority_high_rounded;
         break;
-      default:
-        priorityColor = Colors.blue;
-        priorityIcon = Icons.info;
-        priorityBadge = 'Info';
+      default: // info
+        borderColor = const Color(0xFFE8DED2);
+        borderWidth = 5;
+        bgColor = Colors.white;
+        iconBgColor = const Color(0x1900C9A7);
+        icon = Icons.info_outline_rounded;
     }
     
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: () {
-          Navigator.pushNamed(
-            context,
-            AppRoutes.announcementDetail,
-            arguments: announcement.id,
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header: Icon & Badge
-              Row(
-                children: [
-                  Stack(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.campaign, color: Colors.blue.shade700, size: 24),
-                      ),
-                      // Unread badge (dot indicator)
-                      if (!announcement.isRead)
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            if (announcement.prioritas == 'urgent' || announcement.prioritas == 'penting') ...[
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: priorityColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  priorityBadge,
-                                  style: TextStyle(
-                                    color: priorityColor,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                            ],
-                            if (announcement.kategori != null) ...[
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade200,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  announcement.kategori!,
-                                  style: TextStyle(
-                                    color: Colors.grey.shade700,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          dateFormat.format(announcement.createdAt),
-                          style: AppTheme.caption.copyWith(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              
-              // Judul with bold if unread
-              Text(
-                announcement.judul,
-                style: AppTheme.heading3.copyWith(
-                  fontSize: 16,
-                  fontWeight: announcement.isRead ? FontWeight.normal : FontWeight.bold,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              
-              // Konten
-              Text(
-                announcement.konten,
-                style: AppTheme.bodyText2.copyWith(color: Colors.grey.shade700),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-              
-              // Target (jika ada)
-              if (announcement.target != null && announcement.target != 'semua') ...[
-                const SizedBox(height: 8),
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, AppRoutes.announcementDetail, arguments: announcement.id);
+      },
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(19),
+        decoration: BoxDecoration(
+          color: bgColor,
+          border: Border.all(width: borderWidth, color: borderColor),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(17),
+            topRight: Radius.circular(11),
+            bottomLeft: Radius.circular(11),
+            bottomRight: Radius.circular(17),
+          ),
+        ),
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title and Icon Row
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.people, size: 14, color: Colors.grey.shade600),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Target: ${announcement.target}',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 11,
-                        fontStyle: FontStyle.italic,
+                    Expanded(
+                      child: Text(
+                        announcement.judul,
+                        style: TextStyle(
+                          color: Color(0xFF1A1A1A),
+                          fontSize: 19,
+                          fontWeight: FontWeight.w600,
+                          height: 1.25,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: iconBgColor,
+                        borderRadius: BorderRadius.circular(9999),
+                      ),
+                      child: Center(
+                        child: Icon(icon, size: 18, color: borderColor),
                       ),
                     ),
                   ],
                 ),
+                SizedBox(height: 16),
+                // Content
+                Text(
+                  announcement.konten,
+                  style: TextStyle(
+                    color: Color(0xFF5D5D5D),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    height: 1.50,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: true,
+                ),
+                SizedBox(height: 28),
               ],
-              
-              const SizedBox(height: 12),
-              
-              // Read more
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    'Baca selengkapnya',
-                    style: TextStyle(
-                      color: AppTheme.primaryColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
+            ),
+            // Date positioned at bottom right
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Opacity(
+                opacity: 0.50,
+                child: Text(
+                  dateFormat.format(announcement.createdAt).toUpperCase(),
+                  style: TextStyle(
+                    color: Color(0xFF1A1C1A),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                    height: 1.27,
+                    letterSpacing: 0.22,
                   ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_forward,
-                    size: 16,
-                    color: AppTheme.primaryColor,
-                  ),
-                ],
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

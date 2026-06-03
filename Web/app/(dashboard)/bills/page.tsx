@@ -162,10 +162,10 @@ export default function BillsPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Total Tagihan", value: summary.total, color: "text-blue-600" },
+          { label: "Total Tagihan", value: summary.total, color: "text-[#A23900]" },
           { label: "Lunas", value: summary.paid, color: "text-emerald-600" },
           { label: "Belum Bayar", value: summary.pending, color: "text-amber-600" },
-          { label: "Total Terkumpul", value: formatCurrency(summary.totalAmount), color: "text-purple-600" },
+          { label: "Total Terkumpul", value: formatCurrency(summary.totalAmount), color: "text-[#A23900]" },
         ].map((s) => (
           <Card key={s.label}><CardContent className="pt-4 pb-4">
             <p className="text-xs text-muted-foreground">{s.label}</p>
@@ -191,7 +191,7 @@ export default function BillsPage() {
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Generate Tagihan Bulanan</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 text-sm text-blue-700 dark:text-blue-300">
+            <div className="bg-[#FFF8F0] rounded-lg p-4 text-sm text-[#A23900]">
               <p className="font-medium">Tagihan akan digenerate untuk semua penghuni aktif.</p>
             </div>
             <div className="grid grid-cols-2 gap-4">

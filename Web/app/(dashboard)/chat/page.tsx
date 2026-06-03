@@ -76,7 +76,7 @@ export default function ChatPage() {
       const rooms: ChatRoom[] = snapshot.docs
         .map(doc => {
           const data = doc.data();
-          console.log("📄 [ChatPage] Chat room doc:", doc.id, data);
+          console.log("[ChatPage] Chat room doc:", doc.id, data);
           return {
             id: doc.id,
             ...data as Omit<ChatRoom, 'id'>
@@ -204,7 +204,7 @@ export default function ChatPage() {
                     className={cn("w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left", isSelected && "bg-muted")}>
                     <div className="relative">
                       <Avatar className="w-10 h-10">
-                        <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">{getInitials(room.penghuni_name || "?")}</AvatarFallback>
+                        <AvatarFallback className="bg-[#FFF8F0] text-[#A23900] text-xs font-semibold">{getInitials(room.penghuni_name || "?")}</AvatarFallback>
                       </Avatar>
                       <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background" />
                     </div>
@@ -216,7 +216,7 @@ export default function ChatPage() {
                       <div className="flex items-center justify-between">
                         <p className="text-xs text-muted-foreground truncate">{room.last_message || "Belum ada pesan"}</p>
                         {(room.unread_count || 0) > 0 && (
-                          <span className="w-5 h-5 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center shrink-0">
+                          <span className="w-5 h-5 bg-[#A23900] text-white text-[10px] font-bold rounded-full flex items-center justify-center shrink-0">
                             {room.unread_count}
                           </span>
                         )}
@@ -235,7 +235,7 @@ export default function ChatPage() {
                 {/* Header */}
                 <div className="h-14 border-b flex items-center px-4 gap-3">
                   <Avatar className="w-8 h-8">
-                    <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">{getInitials(selectedRoom.penghuni_name || "?")}</AvatarFallback>
+                    <AvatarFallback className="bg-[#FFF8F0] text-[#A23900] text-xs">{getInitials(selectedRoom.penghuni_name || "?")}</AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="font-medium text-sm">{selectedRoom.penghuni_name || "Penghuni"}</p>
@@ -256,7 +256,7 @@ export default function ChatPage() {
                       <div key={msg.id} className={cn("flex", isAdmin ? "justify-end" : "justify-start")}>
                         <div className={cn(
                           "max-w-[70%] rounded-2xl px-4 py-2.5 text-sm",
-                          isAdmin ? "bg-blue-600 text-white rounded-br-sm" : "bg-muted rounded-bl-sm"
+                          isAdmin ? "bg-[#A23900] text-white rounded-br-sm" : "bg-muted rounded-bl-sm"
                         )}>
                           <p>{msg.message}</p>
                           <p className={cn("text-[10px] mt-1", isAdmin ? "text-blue-200" : "text-muted-foreground")}>

@@ -1,5 +1,5 @@
 ﻿import { Request, Response } from 'express';
-import { MaintenanceModel } from '../models';
+import { MaintenanceModel, NotificationModel } from '../models';
 
 export class MaintenanceController {
   /**
@@ -157,6 +157,7 @@ export class MaintenanceController {
         });
       }
 
+      const oldStatus = existingMaintenance.status;
       const maintenance = await MaintenanceModel.update(parseInt(id), {
         judul,
         deskripsi,
@@ -168,6 +169,48 @@ export class MaintenanceController {
         biaya: biaya ? parseFloat(biaya) : undefined,
         tanggal_selesai: tanggal_selesai ? new Date(tanggal_selesai) : undefined
       });
+
+      // 🔔 Create notification if status changed
+      if (status && status !== oldStatus) {
+        const { pool } = await import('../config/database');
+        
+        // Get tenant's user_id
+        const tenantResult = await pool.query(
+          'SELECT user_id FROM tenants WHERE id = $1',
+          [existingMaintenance.tenant_id]
+        );
+
+        if (tenantResult.rows.length > 0) {
+          const userId = tenantResult.rows[0].user_id;
+          
+          // Create status message
+          let statusMessage = '';
+          switch (status) {
+            case 'baru':
+              statusMessage = 'Laporan keluhan Anda telah diterima dan menunggu diproses';
+              break;
+            case 'diproses':
+              statusMessage = 'Laporan keluhan Anda sedang diproses oleh admin';
+              break;
+            case 'selesai':
+              statusMessage = 'Laporan keluhan Anda telah selesai ditangani';
+              break;
+            default:
+              statusMessage = `Status laporan keluhan Anda diupdate: ${status}`;
+          }
+
+          // Create notification
+          await NotificationModel.create({
+            user_id: userId,
+            title: `Keluhan: ${existingMaintenance.judul}`,
+            message: statusMessage,
+            type: 'maintenance',
+            related_id: parseInt(id)
+          });
+
+          console.log(`🔔 Created maintenance notification for user_id=${userId}, status=${status}`);
+        }
+      }
 
       return res.json({
         success: true,
@@ -207,11 +250,54 @@ export class MaintenanceController {
         });
       }
 
+      const oldStatus = existingMaintenance.status;
       const maintenance = await MaintenanceModel.update(parseInt(id), {
         status,
         komentar_admin,
         biaya: biaya ? parseFloat(biaya) : undefined
       });
+
+      // 🔔 Create notification if status changed
+      if (status !== oldStatus) {
+        const { pool } = await import('../config/database');
+        
+        // Get tenant's user_id
+        const tenantResult = await pool.query(
+          'SELECT user_id FROM tenants WHERE id = $1',
+          [existingMaintenance.tenant_id]
+        );
+
+        if (tenantResult.rows.length > 0) {
+          const userId = tenantResult.rows[0].user_id;
+          
+          // Create status message
+          let statusMessage = '';
+          switch (status) {
+            case 'baru':
+              statusMessage = 'Laporan keluhan Anda telah diterima dan menunggu diproses';
+              break;
+            case 'diproses':
+              statusMessage = 'Laporan keluhan Anda sedang diproses oleh admin';
+              break;
+            case 'selesai':
+              statusMessage = 'Laporan keluhan Anda telah selesai ditangani';
+              break;
+            default:
+              statusMessage = `Status laporan keluhan Anda diupdate: ${status}`;
+          }
+
+          // Create notification
+          await NotificationModel.create({
+            user_id: userId,
+            title: `Keluhan: ${existingMaintenance.judul}`,
+            message: statusMessage,
+            type: 'maintenance',
+            related_id: parseInt(id)
+          });
+
+          console.log(`🔔 Created maintenance notification for user_id=${userId}, status=${status}`);
+        }
+      }
 
       return res.json({
         success: true,

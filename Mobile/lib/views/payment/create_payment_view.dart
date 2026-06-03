@@ -6,15 +6,16 @@ import '../../controllers/bill_controller.dart';
 import '../../controllers/auth_controller.dart';
 import '../../services/tenant_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../routes/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 
 /// Create Payment View
-/// Form untuk upload bukti pembayaran
+/// Form untuk membuat pembayaran (TANPA upload bukti)
 class CreatePaymentView extends StatefulWidget {
   final String billId;
   
-  const CreatePaymentView({Key? key, required this.billId}) : super(key: key);
+  const CreatePaymentView({super.key, required this.billId});
 
   @override
   State<CreatePaymentView> createState() => _CreatePaymentViewState();
@@ -27,7 +28,6 @@ class _CreatePaymentViewState extends State<CreatePaymentView> {
   
   String _metodePembayaran = 'Transfer Bank';
   DateTime _tanggalBayar = DateTime.now();
-  String? _buktiPembayaranPath;
   
   final List<String> _metodeList = [
     'Transfer Bank',
@@ -76,34 +76,8 @@ class _CreatePaymentViewState extends State<CreatePaymentView> {
     }
   }
   
-  Future<void> _pickImage() async {
-    // TODO: Implement image picker
-    // For now, just show a placeholder
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Fitur upload foto akan segera tersedia'),
-        backgroundColor: Colors.orange,
-      ),
-    );
-    
-    // Simulate image selection
-    setState(() {
-      _buktiPembayaranPath = '/path/to/image.jpg';
-    });
-  }
-  
   Future<void> _submitPayment() async {
     if (!_formKey.currentState!.validate()) {
-      return;
-    }
-    
-    if (_buktiPembayaranPath == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Silakan upload bukti pembayaran'),
-          backgroundColor: Colors.red,
-        ),
-      );
       return;
     }
     
@@ -113,12 +87,14 @@ class _CreatePaymentViewState extends State<CreatePaymentView> {
     // Get tenant_id from tenants table based on user_id
     final user = authController.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('User tidak ditemukan'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('User tidak ditemukan'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
     
@@ -126,12 +102,14 @@ class _CreatePaymentViewState extends State<CreatePaymentView> {
     final tenant = await TenantService.getTenantByUserId(user.id.toString());
     
     if (tenant == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Data tenant tidak ditemukan'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Data tenant tidak ditemukan'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
     
@@ -140,22 +118,32 @@ class _CreatePaymentViewState extends State<CreatePaymentView> {
       tenantId: int.parse(tenant.id),
       jumlah: double.parse(_jumlahController.text),
       metodePembayaran: _metodePembayaran,
-      buktiPembayaran: _buktiPembayaranPath,
+      buktiPembayaran: null, // Tidak perlu upload bukti
       keterangan: _keteranganController.text.isEmpty ? null : _keteranganController.text,
     );
     
     if (success && mounted) {
+      // Setelah berhasil, redirect ke payment history
+      Navigator.pop(context); // Pop create payment page
+      Navigator.pop(context); // Pop bill detail page
+      Navigator.pushNamed(
+        context,
+        AppRoutes.paymentHistory,
+        arguments: widget.billId,
+      );
+      
+      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Pembayaran berhasil disubmit. Menunggu verifikasi admin.'),
+          content: Text('Pembayaran berhasil dicatat!'),
           backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
         ),
       );
-      Navigator.pop(context);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(paymentController.errorMessage ?? 'Gagal submit pembayaran'),
+          content: Text(paymentController.errorMessage ?? 'Gagal mencatat pembayaran'),
           backgroundColor: Colors.red,
         ),
       );
@@ -169,7 +157,7 @@ class _CreatePaymentViewState extends State<CreatePaymentView> {
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Upload Bukti Pembayaran'),
+        title: const Text('Catat Pembayaran'),
       ),
       body: Consumer2<BillController, PaymentController>(
         builder: (context, billController, paymentController, child) {
@@ -234,7 +222,7 @@ class _CreatePaymentViewState extends State<CreatePaymentView> {
                       if (jumlah == null) {
                         return 'Jumlah tidak valid';
                       }
-                      final total = bill.jumlah + bill.denda;
+                      final total = bill.jumlah + (bill.denda ?? 0);
                       if (jumlah < total) {
                         return 'Jumlah kurang dari total tagihan';
                       }
@@ -286,52 +274,6 @@ class _CreatePaymentViewState extends State<CreatePaymentView> {
                   
                   const SizedBox(height: 16),
                   
-                  // Bukti Pembayaran
-                  Text('Bukti Pembayaran', style: AppTheme.bodyText1.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: _pickImage,
-                    child: Container(
-                      width: double.infinity,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(12),
-                        color: Colors.grey[100],
-                      ),
-                      child: _buktiPembayaranPath == null
-                        ? Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.cloud_upload, size: 48, color: Colors.grey[400]),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Tap untuk upload foto',
-                                style: TextStyle(color: Colors.grey[600]),
-                              ),
-                            ],
-                          )
-                        : Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.check_circle, size: 48, color: Colors.green),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Foto berhasil dipilih',
-                                style: TextStyle(color: Colors.green),
-                              ),
-                              const SizedBox(height: 4),
-                              TextButton(
-                                onPressed: _pickImage,
-                                child: const Text('Ganti Foto'),
-                              ),
-                            ],
-                          ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
                   // Keterangan
                   CustomTextField(
                     controller: _keteranganController,
@@ -345,7 +287,7 @@ class _CreatePaymentViewState extends State<CreatePaymentView> {
                   
                   // Submit Button
                   CustomButton(
-                    text: 'Submit Pembayaran',
+                    text: 'Catat Pembayaran',
                     onPressed: _submitPayment,
                     isLoading: paymentController.isLoading,
                   ),
@@ -365,7 +307,7 @@ class _CreatePaymentViewState extends State<CreatePaymentView> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Pembayaran akan diverifikasi oleh admin dalam 1x24 jam',
+                            'Pembayaran akan langsung tercatat dalam sistem',
                             style: TextStyle(color: Colors.blue[700], fontSize: 12),
                           ),
                         ),
