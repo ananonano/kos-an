@@ -54,36 +54,6 @@ class AuthController extends ChangeNotifier {
     }
   }
   
-  // Register
-  Future<bool> register({
-    required String email,
-    required String password,
-    required String nama,
-    required String noTelepon,
-  }) async {
-    try {
-      _isLoading = true;
-      _errorMessage = null;
-      notifyListeners();
-      
-      _currentUser = await AuthService.register(
-        email: email,
-        password: password,
-        nama: nama,
-        noTelepon: noTelepon,
-      );
-      
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _isLoading = false;
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
-      notifyListeners();
-      return false;
-    }
-  }
-  
   // Logout
   Future<void> logout() async {
     try {

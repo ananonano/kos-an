@@ -119,21 +119,11 @@ class _LoginViewState extends State<LoginView> {
                     );
                   },
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Belum punya akun? ',
-                      style: AppTheme.bodyText2,
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, AppRoutes.register);
-                      },
-                      child: Text('Daftar'),
-                    ),
-                  ],
+                const SizedBox(height: 24),
+                Text(
+                  'Untuk mendaftar sebagai penghuni baru,\nsilakan hubungi admin kos',
+                  style: AppTheme.bodyText2.copyWith(color: Colors.grey),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),

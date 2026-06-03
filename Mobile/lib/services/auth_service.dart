@@ -5,7 +5,7 @@ import '../core/constants/app_constants.dart';
 import '../models/user_model.dart';
 
 /// Authentication Service
-/// Mengelola operasi autentikasi (login, register, logout)
+/// Mengelola operasi autentikasi (login, logout)
 class AuthService {
   // Login
   static Future<UserModel> login(String email, String password) async {
@@ -40,49 +40,6 @@ class AuthService {
       return user;
     } catch (e) {
       throw Exception('Login gagal: ${e.toString()}');
-    }
-  }
-  
-  // Register
-  static Future<UserModel> register({
-    required String email,
-    required String password,
-    required String nama,
-    required String noTelepon,
-  }) async {
-    try {
-      final response = await HttpService.post(
-        '${AppConfig.authEndpoint}/register',
-        body: {
-          'email': email,
-          'password': password,
-          'nama': nama,
-          'no_telepon': noTelepon,
-          'role': 'tenant', // Default role tenant
-        },
-        includeAuth: false,
-      );
-      
-      // Backend response format: { "success": true, "message": "...", "token": "...", "user": {...} }
-      if (response['success'] != true) {
-        throw Exception(response['message'] ?? 'Register gagal');
-      }
-      
-      // Save token
-      await StorageService.saveString(
-        AppConstants.tokenKey,
-        response['token'],
-      );
-      
-      // Save user data
-      final userData = response['user'];
-      final user = UserModel.fromJson(userData);
-      await StorageService.saveObject(AppConstants.userKey, user.toJson());
-      await StorageService.saveString(AppConstants.roleKey, user.role);
-      
-      return user;
-    } catch (e) {
-      throw Exception('Register gagal: ${e.toString()}');
     }
   }
   

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../views/splash/splash_view.dart';
 import '../views/auth/login_view.dart';
-import '../views/auth/register_view.dart';
 import '../views/home/home_view.dart';
 import '../views/kamar/kamar_list_view.dart';
 import '../views/kamar/kamar_detail_view.dart';
@@ -31,7 +30,6 @@ class AppRoutes {
   // Route Names
   static const String splash = '/';
   static const String login = '/login';
-  static const String register = '/register';
   static const String home = '/home';
   static const String kamarList = '/kamar';
   static const String kamarDetail = '/kamar/detail';
@@ -63,9 +61,6 @@ class AppRoutes {
       
       case login:
         return MaterialPageRoute(builder: (_) => const LoginView());
-      
-      case register:
-        return MaterialPageRoute(builder: (_) => const RegisterView());
       
       case home:
         return MaterialPageRoute(builder: (_) => const HomeView());

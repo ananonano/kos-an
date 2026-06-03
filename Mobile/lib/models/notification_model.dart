@@ -4,7 +4,7 @@ class NotificationModel {
   final String userId;
   final String title;
   final String message;
-  final String type; // payment, maintenance, announcement, system
+  final String type; // payment, bill, maintenance, announcement, system
   final int? relatedId;
   final bool isRead;
   final DateTime createdAt;
@@ -52,6 +52,8 @@ class NotificationModel {
     switch (type) {
       case 'payment':
         return 'Pembayaran';
+      case 'bill':
+        return 'Tagihan';
       case 'maintenance':
         return 'Keluhan';
       case 'announcement':
@@ -67,6 +69,8 @@ class NotificationModel {
     switch (type) {
       case 'payment':
         return '💳';
+      case 'bill':
+        return '🧾';
       case 'maintenance':
         return '🔧';
       case 'announcement':

@@ -133,42 +133,17 @@ class _ProfileViewState extends State<ProfileView> {
             children: [
               // Profile Picture
               Center(
-                child: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: AppTheme.primaryColor,
-                      child: const Icon(
-                        Icons.person,
-                        size: 60,
-                        color: Colors.white,
-                      ),
+                child: CircleAvatar(
+                  radius: 60,
+                  backgroundColor: AppTheme.primaryColor,
+                  child: Text(
+                    user?.nama.substring(0, 1).toUpperCase() ?? 'U',
+                    style: const TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
-                    if (_isEditing)
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: CircleAvatar(
-                          radius: 20,
-                          backgroundColor: AppTheme.accentColor,
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.camera_alt,
-                              size: 20,
-                              color: Colors.white,
-                            ),
-                            onPressed: () {
-                              // TODO: Implement image picker
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Fitur upload foto akan segera hadir'),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(height: 24),

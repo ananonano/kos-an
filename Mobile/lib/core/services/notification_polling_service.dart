@@ -1,36 +1,38 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../services/notification_service.dart';
+import '../../services/announcement_service.dart';
 import './local_notification_service.dart';
 
 /// Notification Polling Service
-/// Periodically checks backend for new notifications and shows system notifications
+/// Periodically checks backend for new ANNOUNCEMENTS and shows system notifications
+/// NOTE: Only announcements trigger system (HP) notifications from the announcements table.
+/// Payment, bill, and maintenance notifications only appear in the in-app notification menu (notifications table).
 class NotificationPollingService {
   static Timer? _timer;
   static bool _isRunning = false;
-  static const String _lastCheckKey = 'last_notification_check';
-  static Set<int> _shownNotificationIds = {};
+  static const String _lastCheckKey = 'last_announcement_check';
+  static Set<int> _shownAnnouncementIds = {};
 
-  /// Start polling for new notifications
+  /// Start polling for new announcements
   static Future<void> start() async {
     if (_isRunning) {
-      debugPrint('⚠️ Notification polling already running');
+      debugPrint('⚠️ Announcement polling already running');
       return;
     }
 
     _isRunning = true;
-    await _loadShownNotifications();
+    await _loadShownAnnouncements();
 
     // Check immediately on start
-    await _checkForNewNotifications();
+    await _checkForNewAnnouncements();
 
     // Then check every 30 seconds
     _timer = Timer.periodic(const Duration(seconds: 30), (timer) async {
-      await _checkForNewNotifications();
+      await _checkForNewAnnouncements();
     });
 
-    debugPrint('✅ Notification polling started (every 30 seconds)');
+    debugPrint('✅ Announcement polling started (every 30 seconds)');
   }
 
   /// Stop polling
@@ -38,114 +40,94 @@ class NotificationPollingService {
     _timer?.cancel();
     _timer = null;
     _isRunning = false;
-    debugPrint('⏹️ Notification polling stopped');
+    debugPrint('⏹️ Announcement polling stopped');
   }
 
-  /// Check for new notifications
-  static Future<void> _checkForNewNotifications() async {
+  /// Check for new announcements
+  static Future<void> _checkForNewAnnouncements() async {
     try {
-      debugPrint('🔍 Checking for new notifications...');
+      debugPrint('🔍 Checking for new announcements...');
 
-      // Get unread notifications from backend
-      final notifications = await NotificationService.getAllNotifications(
-        isRead: false,
-      );
+      // Get all announcements from backend (they include isRead status)
+      final announcements = await AnnouncementService.getAllAnnouncements();
 
-      if (notifications.isEmpty) {
-        debugPrint('📭 No new notifications');
+      if (announcements.isEmpty) {
+        debugPrint('📭 No announcements found');
         return;
       }
 
-      // Filter notifications that haven't been shown yet
-      final newNotifications = notifications.where((notif) {
-        final notifId = int.tryParse(notif.id) ?? 0;
-        return !_shownNotificationIds.contains(notifId);
+      // Filter unread announcements that haven't been shown yet
+      final newAnnouncements = announcements.where((announcement) {
+        final announcementId = int.tryParse(announcement.id) ?? 0;
+        return !announcement.isRead && !_shownAnnouncementIds.contains(announcementId);
       }).toList();
 
-      if (newNotifications.isEmpty) {
-        debugPrint('✅ No new notifications to show');
+      if (newAnnouncements.isEmpty) {
+        debugPrint('✅ No new announcements to show');
         return;
       }
 
-      debugPrint('🔔 Found ${newNotifications.length} new notifications');
+      debugPrint('🔔 Found ${newAnnouncements.length} new announcements');
 
-      // Show system notifications for new notifications
-      for (var notif in newNotifications) {
-        final notifId = int.tryParse(notif.id) ?? 0;
+      // Show system notifications for new announcements
+      for (var announcement in newAnnouncements) {
+        final announcementId = int.tryParse(announcement.id) ?? 0;
 
-        switch (notif.type) {
-          case 'announcement':
-            await LocalNotificationService.showAnnouncementNotification(
-              id: notifId,
-              title: notif.title,
-              body: notif.message,
-            );
-            break;
-          case 'payment':
-            await LocalNotificationService.showPaymentNotification(
-              id: notifId,
-              title: notif.title,
-              body: notif.message,
-            );
-            break;
-          default:
-            await LocalNotificationService.showNotification(
-              id: notifId,
-              title: notif.title,
-              body: notif.message,
-              payload: '${notif.type}_${notif.relatedId}',
-            );
-        }
+        await LocalNotificationService.showAnnouncementNotification(
+          id: announcementId,
+          title: announcement.judul,
+          body: announcement.konten,
+        );
 
         // Mark as shown
-        _shownNotificationIds.add(notifId);
+        _shownAnnouncementIds.add(announcementId);
       }
 
-      // Save shown notification IDs
-      await _saveShownNotifications();
+      // Save shown announcement IDs
+      await _saveShownAnnouncements();
 
       // Update last check timestamp
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_lastCheckKey, DateTime.now().millisecondsSinceEpoch);
 
-      debugPrint('✅ Showed ${newNotifications.length} system notifications');
+      debugPrint('✅ Showed ${newAnnouncements.length} announcement system notifications');
     } catch (e) {
-      debugPrint('❌ Error checking notifications: $e');
+      debugPrint('❌ Error checking announcements: $e');
     }
   }
 
-  /// Load shown notification IDs from local storage
-  static Future<void> _loadShownNotifications() async {
+  /// Load shown announcement IDs from local storage
+  static Future<void> _loadShownAnnouncements() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final idsString = prefs.getStringList('shown_notification_ids') ?? [];
-      _shownNotificationIds = idsString.map((id) => int.parse(id)).toSet();
-      debugPrint('📥 Loaded ${_shownNotificationIds.length} shown notification IDs');
+      final idsString = prefs.getStringList('shown_announcement_ids') ?? [];
+      _shownAnnouncementIds = idsString.map((id) => int.parse(id)).toSet();
+      debugPrint('📥 Loaded ${_shownAnnouncementIds.length} shown announcement IDs');
     } catch (e) {
-      debugPrint('❌ Error loading shown notifications: $e');
-      _shownNotificationIds = {};
+      debugPrint('❌ Error loading shown announcements: $e');
+      _shownAnnouncementIds = {};
     }
   }
 
-  /// Save shown notification IDs to local storage
-  static Future<void> _saveShownNotifications() async {
+  /// Save shown announcement IDs to local storage
+  static Future<void> _saveShownAnnouncements() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final idsString = _shownNotificationIds.map((id) => id.toString()).toList();
-      await prefs.setStringList('shown_notification_ids', idsString);
-      debugPrint('💾 Saved ${_shownNotificationIds.length} shown notification IDs');
+      final idsString = _shownAnnouncementIds.map((id) => id.toString()).toList();
+      await prefs.setStringList('shown_announcement_ids', idsString);
+      debugPrint('💾 Saved ${_shownAnnouncementIds.length} shown announcement IDs');
     } catch (e) {
-      debugPrint('❌ Error saving shown notifications: $e');
+      debugPrint('❌ Error saving shown announcements: $e');
     }
   }
 
-  /// Clear shown notifications cache (for testing)
+  /// Clear shown announcements cache (for testing)
   static Future<void> clearCache() async {
-    _shownNotificationIds.clear();
+    _shownAnnouncementIds.clear();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('shown_notification_ids');
+    await prefs.remove('shown_announcement_ids');
     await prefs.remove(_lastCheckKey);
-    debugPrint('🗑️ Cleared notification cache');
+    debugPrint('🗑️ Cleared announcement cache');
   }
 
   /// Get last check time
