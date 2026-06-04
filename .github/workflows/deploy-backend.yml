@@ -35,7 +35,8 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --port 5000 \
-            --set-env-vars "DB_HOST=${{ secrets.DB_HOST }},DB_PORT=5432,DB_NAME=${{ secrets.DB_NAME }},DB_USER=${{ secrets.DB_USER }},DB_PASSWORD=${{ secrets.DB_PASSWORD }},JWT_SECRET=${{ secrets.JWT_SECRET }},CORS_ORIGIN=${{ secrets.CORS_ORIGIN }},NODE_ENV=production" \
+            --set-env-vars "DB_HOST=${{ secrets.DB_HOST }},DB_PORT=5432,DB_NAME=${{ secrets.DB_NAME }},DB_USER=${{ secrets.DB_USER }},DB_PASSWORD=${{ secrets.DB_PASSWORD }},JWT_SECRET=${{ secrets.JWT_SECRET }},CORS_ORIGIN=${{ secrets.CORS_ORIGIN }},NODE_ENV=production,CLOUD_SQL_CONNECTION_NAME=data-warehouse-443412:asia-southeast2:kos-terpadu" \
+            --add-cloudsql-instances="data-warehouse-443412:asia-southeast2:kos-terpadu" \
             --quiet
 
       - name: Show deployment URL
