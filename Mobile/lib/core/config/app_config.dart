@@ -2,15 +2,10 @@
 /// Menyimpan konfigurasi aplikasi seperti base URL API, Firebase config, dll
 class AppConfig {
   // API Configuration
-  // Backend running di port 5000 (bukan 3000!)
-  // Untuk test di emulator: http://10.0.2.2:5000/api
-  // Untuk test di device fisik: http://192.168.x.x:5000/api (ganti dengan IP komputer)
-  // 
-  // PENTING: Pastikan device dan komputer terhubung ke WiFi yang sama!
-  // IP komputer kamu: 192.168.18.24 (Updated - WiFi baru!)
+  // PRODUCTION: Cloud Run backend
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.18.24:5000/api', // ✅ IP komputer di jaringan WiFi
+    defaultValue: 'https://kosan-backend-670153358279.asia-southeast2.run.app/api', // ✅ Production Cloud Run
   );
   
   static String get baseUrl => apiBaseUrl;
