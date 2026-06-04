@@ -22,8 +22,8 @@ const schema = z.object({
   judul: z.string().min(1, "Judul wajib diisi"),
   konten: z.string().min(10, "Konten minimal 10 karakter"),
   kategori: z.string().min(1, "Kategori wajib diisi"),
-  prioritas: z.enum(["info", "penting", "urgent"]).default("info"),
-  target: z.enum(["semua", "tenant", "admin"]).default("semua"),
+  prioritas: z.enum(["info", "penting", "urgent"]),
+  target: z.enum(["semua", "tenant", "admin"]),
 });
 type FormData = z.infer<typeof schema>;
 

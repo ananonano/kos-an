@@ -131,6 +131,19 @@ coverage/
 .netlify
 
 # ============================================
+# CI/CD & SECRETS
+# ============================================
+# Google Cloud Service Account Keys
+gcp-key.json
+*-key.json
+*.json.key
+service-account*.json
+
+# GitHub Actions secrets (local testing)
+.github/secrets/
+secrets/
+
+# ============================================
 # MISC
 # ============================================
 *.bak

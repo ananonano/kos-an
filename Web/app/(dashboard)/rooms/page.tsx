@@ -24,7 +24,7 @@ import api from "@/lib/axios";
 const schema = z.object({
   nomor_kamar: z.string().min(1, "Nomor kamar wajib diisi"),
   tipe: z.string().min(1, "Tipe kamar wajib diisi"),
-  harga: z.coerce.number().min(1, "Harga wajib diisi"),
+  harga: z.number().min(1, "Harga wajib diisi"),
   status: z.enum(["kosong", "terisi"]),
   deskripsi: z.string().optional(),
   fasilitas: z.array(z.string()).min(1, "Pilih minimal 1 fasilitas"),
@@ -228,7 +228,7 @@ export default function RoomsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Harga/Bulan (Rp)</Label>
-                <Input {...register("harga")} type="number" placeholder="1500000" />
+                <Input {...register("harga", { valueAsNumber: true })} type="number" placeholder="1500000" />
                 {errors.harga && <p className="text-red-500 text-xs">{errors.harga.message}</p>}
               </div>
               <div className="space-y-2">

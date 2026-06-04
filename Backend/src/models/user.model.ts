@@ -2,6 +2,7 @@
 // USER MODEL - Database Operations
 // ============================================
 
+import { query } from '../config/database';
 import { pool } from '../config/database';
 import { User } from '../types';
 import bcrypt from 'bcryptjs';
@@ -17,7 +18,7 @@ export class UserModel {
     }): Promise<User> {
         const hashedPassword = await bcrypt.hash(data.password, 10);
 
-        const query = `
+        const queryText = `
       INSERT INTO users (email, password, nama, role, no_telepon)
       VALUES ($1, $2, $3, $4, $5)
       RETURNING *
@@ -31,21 +32,21 @@ export class UserModel {
             data.no_telepon || null,
         ];
 
-        const result = await pool.query(query, values);
+        const result = await query(queryText, values);
         return result.rows[0];
     }
 
     // Find user by email
     static async findByEmail(email: string): Promise<User | null> {
-        const query = 'SELECT * FROM users WHERE email = $1';
-        const result = await pool.query(query, [email]);
+        const queryText = 'SELECT * FROM users WHERE email = $1';
+        const result = await query(queryText, [email]);
         return result.rows[0] || null;
     }
 
     // Find user by ID
     static async findById(id: number): Promise<User | null> {
-        const query = 'SELECT * FROM users WHERE id = $1';
-        const result = await pool.query(query, [id]);
+        const queryText = 'SELECT * FROM users WHERE id = $1';
+        const result = await query(queryText, [id]);
         return result.rows[0] || null;
     }
 
@@ -82,7 +83,7 @@ export class UserModel {
         const total = parseInt(countResult.rows[0].count);
 
         // Get users
-        const query = `
+        const usersQuery = `
       SELECT id, email, nama, role, no_telepon, foto, created_at, updated_at
       FROM users
       ${whereClause}
@@ -91,7 +92,7 @@ export class UserModel {
     `;
 
         values.push(limit, offset);
-        const result = await pool.query(query, values);
+        const result = await pool.query(usersQuery, values);
 
         return { users: result.rows, total };
     }
@@ -151,17 +152,17 @@ export class UserModel {
         updates.push(`updated_at = NOW()`);
         values.push(id);
 
-        const query = `
+        const updateQuery = `
       UPDATE users
       SET ${updates.join(', ')}
       WHERE id = $${paramCount}
       RETURNING *
     `;
 
-        console.log('SQL Query:', query);
+        console.log('SQL Query:', updateQuery);
         console.log('SQL Values:', values);
 
-        const result = await pool.query(query, values);
+        const result = await pool.query(updateQuery, values);
 
         console.log('Update result:', result.rows[0]);
 
@@ -170,8 +171,8 @@ export class UserModel {
 
     // Delete user
     static async delete(id: number): Promise<boolean> {
-        const query = 'DELETE FROM users WHERE id = $1';
-        const result = await pool.query(query, [id]);
+        const deleteQuery = 'DELETE FROM users WHERE id = $1';
+        const result = await pool.query(deleteQuery, [id]);
         return result.rowCount ? result.rowCount > 0 : false;
     }
 
@@ -182,15 +183,15 @@ export class UserModel {
 
     // Check if email exists
     static async emailExists(email: string, excludeId?: number): Promise<boolean> {
-        let query = 'SELECT id FROM users WHERE email = $1';
+        let queryText = 'SELECT id FROM users WHERE email = $1';
         const values: any[] = [email];
 
         if (excludeId) {
-            query += ' AND id != $2';
+            queryText += ' AND id != $2';
             values.push(excludeId);
         }
 
-        const result = await pool.query(query, values);
+        const result = await pool.query(queryText, values);
         return result.rows.length > 0;
     }
 }

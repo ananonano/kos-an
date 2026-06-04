@@ -98,7 +98,7 @@ export default function DashboardPage() {
 
         // Fetch recent activities (mix from payments, maintenance, announcements)
         try {
-          const recentActivities = [];
+          const recentActivities: any[] = [];
           
           // Recent payments (last 5)
           const recentPaymentsRes = await api.get("/payments?limit=5");
@@ -195,7 +195,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Selamat datang, ${user?.name?.split(" ")[0] || "Admin"} `}
+        title={`Selamat datang, ${user?.nama?.split(" ")[0] || "Admin"} `}
         description="Berikut ringkasan aktivitas kos Anda hari ini."
       />
 
@@ -227,7 +227,7 @@ export default function DashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} className="text-muted-foreground" />
                   <YAxis tickFormatter={(v) => `${(v / 1000000).toFixed(0)}jt`} tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={(v: number) => [formatCurrency(v), "Pemasukan"]} />
+                  <Tooltip formatter={(v) => [formatCurrency(Number(v) || 0), "Pemasukan"]} />
                   <Area type="monotone" dataKey="income" stroke="#A23900" strokeWidth={2} fill="url(#incomeGrad)" />
                 </AreaChart>
               </ResponsiveContainer>

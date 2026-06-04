@@ -12,25 +12,25 @@ export function useFirebaseChat(tenantId: string) {
   useEffect(() => {
     if (!user || !tenantId) return;
     setIsLoading(true);
-    const unsubscribe = chatService.listenMessages(user.id, tenantId, (msgs) => {
+    const unsubscribe = chatService.listenMessages(String(user.id), tenantId, (msgs) => {
       setMessages(msgs);
       setIsLoading(false);
       // Mark as read
-      chatService.markAsRead(user.id, tenantId).catch(() => {});
+      chatService.markAsRead(String(user.id), tenantId).catch(() => {});
     });
     return () => unsubscribe();
   }, [user, tenantId]);
 
   const sendMessage = useCallback(async (message: string, imageUrl?: string) => {
     if (!user || !message.trim()) return;
-    await chatService.sendMessage(user.id, tenantId, message, imageUrl);
+    await chatService.sendMessage(String(user.id), tenantId, message, imageUrl);
   }, [user, tenantId]);
 
   const sendImage = useCallback(async (file: File) => {
     if (!user) return;
-    const chatId = [user.id, tenantId].sort().join("_");
+    const chatId = [String(user.id), tenantId].sort().join("_");
     const imageUrl = await chatService.uploadImage(file, chatId);
-    await chatService.sendMessage(user.id, tenantId, "", imageUrl);
+    await chatService.sendMessage(String(user.id), tenantId, "", imageUrl);
   }, [user, tenantId]);
 
   return { messages, isLoading, sendMessage, sendImage };

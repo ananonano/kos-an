@@ -10,7 +10,7 @@ export function useFirebaseNotifications() {
 
   useEffect(() => {
     if (!user) return;
-    const unsubscribe = notificationService.listenNotifications(user.id, (notifs) => {
+    const unsubscribe = notificationService.listenNotifications(String(user.id), (notifs) => {
       setNotifications(notifs);
     });
     return () => unsubscribe();

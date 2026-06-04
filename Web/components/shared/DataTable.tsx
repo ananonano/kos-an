@@ -25,7 +25,7 @@ interface DataTableProps<T> {
   emptyMessage?: string;
 }
 
-export function DataTable<T extends { id: string }>({
+export function DataTable<T extends { id: string | number }>({
   data, columns, isLoading, searchable, searchPlaceholder = "Cari...",
   onSearch, pagination, actions, emptyMessage = "Tidak ada data"
 }: DataTableProps<T>) {

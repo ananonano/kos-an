@@ -37,7 +37,7 @@ export default function ProfilePage() {
 
   const { register: regProfile, handleSubmit: handleProfile, formState: { errors: errProfile } } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
-    defaultValues: { name: user?.name || "", email: user?.email || "", phone: user?.phone || "" },
+    defaultValues: { name: user?.nama || "", email: user?.email || "", phone: user?.no_telepon || "" },
   });
 
   const { register: regPass, handleSubmit: handlePass, reset: resetPass, formState: { errors: errPass } } = useForm<PasswordForm>({
@@ -58,9 +58,9 @@ export default function ProfilePage() {
       // Update local state with response data
       if (response.success && response.data) {
         updateUser({
-          name: response.data.nama,
+          nama: response.data.nama,
           email: response.data.email,
-          phone: response.data.no_telepon,
+          no_telepon: response.data.no_telepon,
         });
       }
 
@@ -110,13 +110,13 @@ export default function ProfilePage() {
         <CardContent className="pt-6">
           <div className="flex items-center gap-6">
             <Avatar className="w-20 h-20">
-              <AvatarImage src={user?.avatar} />
+              <AvatarImage src={user?.foto} />
               <AvatarFallback className="bg-[#A23900] text-white text-2xl font-bold">
-                {user ? getInitials(user.name) : "A"}
+                {user ? getInitials(user.nama) : "A"}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-semibold text-lg">{user?.name}</h3>
+              <h3 className="font-semibold text-lg">{user?.nama}</h3>
               <p className="text-muted-foreground text-sm">{user?.email}</p>
               <span className="inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#FFF8F0] text-[#A23900]">
                 Admin

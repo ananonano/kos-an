@@ -70,13 +70,13 @@ export function Navbar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 px-2">
               <Avatar className="w-8 h-8">
-                <AvatarImage src={user?.avatar} />
+                <AvatarImage src={user?.foto} />
                 <AvatarFallback className="bg-[#A23900] text-white text-xs">
-                  {user ? getInitials(user.name) : "A"}
+                  {user ? getInitials(user.nama) : "A"}
                 </AvatarFallback>
               </Avatar>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium leading-none">{user?.name}</p>
+                <p className="text-sm font-medium leading-none">{user?.nama}</p>
                 <p className="text-xs text-muted-foreground">Admin</p>
               </div>
             </Button>

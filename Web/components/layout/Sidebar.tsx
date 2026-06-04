@@ -156,11 +156,11 @@ export function Sidebar() {
           <div className="p-4 border-t border-[#8B3500]">
             <div className="flex items-center gap-3">
               <Avatar className="w-8 h-8 shrink-0">
-                <AvatarImage src={user.avatar} />
-                <AvatarFallback className="bg-[#A23900] text-white text-xs">{getInitials(user.name)}</AvatarFallback>
+                <AvatarImage src={user.foto} />
+                <AvatarFallback className="bg-[#A23900] text-white text-xs">{getInitials(user.nama)}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-white text-sm font-medium truncate">{user.name}</p>
+                <p className="text-white text-sm font-medium truncate">{user.nama}</p>
                 <p className="text-orange-200 text-xs truncate">{user.email}</p>
               </div>
             </div>

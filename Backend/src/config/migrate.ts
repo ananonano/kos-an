@@ -188,6 +188,24 @@ async function migrate() {
     console.log('✅ Announcements table created\n');
 
     // ============================================
+    // 9. NOTIFICATIONS TABLE
+    // ============================================
+    console.log('📋 Creating notifications table...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        type VARCHAR(50) NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        reference_id INTEGER,
+        is_read BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Notifications table created\n');
+
+    // ============================================
     // CREATE INDEXES FOR PERFORMANCE
     // ============================================
     console.log('📋 Creating indexes...');
@@ -213,6 +231,8 @@ async function migrate() {
     await client.query('CREATE INDEX IF NOT EXISTS idx_maintenance_prioritas ON maintenance(prioritas)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_announcements_is_active ON announcements(is_active)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_announcements_target ON announcements(target)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read)');
 
     console.log('✅ Indexes created\n');
 

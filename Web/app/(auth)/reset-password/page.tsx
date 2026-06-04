@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,7 +21,7 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const [done, setDone] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
@@ -93,5 +93,14 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </motion.div>
+  );
+}
+
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="text-white">Loading...</div>}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
