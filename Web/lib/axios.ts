@@ -1,7 +1,12 @@
 ﻿import axios from "axios";
 
+// Hardcode backend URL for production
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 
+                    process.env.NEXT_PUBLIC_API_URL || 
+                    "https://kosan-backend-670153358279.asia-southeast2.run.app/api";
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
+  baseURL: BACKEND_URL,
   headers: { "Content-Type": "application/json" },
   timeout: 15000,
 });
