@@ -14,8 +14,26 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(helmet());
+
+// CORS Configuration
+const allowedOrigins = [
+  "http://localhost:3000", // Local dev
+  "https://kosan-web-670153358279.asia-southeast2.run.app", // Production Web
+  process.env.CORS_ORIGIN, // Custom origin from env
+].filter(Boolean); // Remove undefined values
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked request from origin: ${origin}`);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
