@@ -34,7 +34,7 @@ jobs:
             --region asia-southeast2 \
             --platform managed \
             --allow-unauthenticated \
-            --build-env-vars "NEXT_PUBLIC_API_BASE_URL=${{ secrets.NEXT_PUBLIC_API_BASE_URL }}" \
+            --set-build-env-vars "NEXT_PUBLIC_API_BASE_URL=${{ secrets.NEXT_PUBLIC_API_BASE_URL }}" \
             --quiet
 
       - name: Show deployment URL
