@@ -98,7 +98,7 @@ class LocalNotificationService {
 
     await _notificationsPlugin.show(
       id,
-      '📢 $title',
+      title,
       body,
       notificationDetails,
       payload: 'announcement_$id',
@@ -136,7 +136,7 @@ class LocalNotificationService {
 
     await _notificationsPlugin.show(
       id,
-      '💳 $title',
+      title,
       body,
       notificationDetails,
       payload: 'payment_$id',

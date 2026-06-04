@@ -3,17 +3,15 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/chat_controller.dart';
-import '../../controllers/tenant_controller.dart';
 import '../../routes/app_routes.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/config/app_config.dart';
 import '../../core/utils/helpers.dart';
 import '../../models/chat_model.dart';
-import '../../models/penghuni_model.dart';
 import '../../widgets/app_drawer.dart';
 
-/// Chat List View
-/// Tampilan daftar chat room (realtime) dengan hamburger menu
+/// Chat List View - Tenant Only
+/// Tampilan daftar chat room untuk tenant dengan admin kos
 class ChatListView extends StatefulWidget {
   const ChatListView({super.key});
 
@@ -22,51 +20,11 @@ class ChatListView extends StatefulWidget {
 }
 
 class _ChatListViewState extends State<ChatListView> {
-  final _searchController = TextEditingController();
-  String _searchQuery = '';
-  List<PenghuniModel> _allTenants = [];
-  bool _isLoadingTenants = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTenants();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadTenants() async {
-    final authController = context.read<AuthController>();
-    if (!authController.isAdmin) return;
-
-    setState(() {
-      _isLoadingTenants = true;
-    });
-
-    try {
-      final tenantController = context.read<TenantController>();
-      await tenantController.getAllTenants(status: 'aktif');
-      setState(() {
-        _allTenants = tenantController.tenantList;
-        _isLoadingTenants = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoadingTenants = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final authController = context.watch<AuthController>();
     final chatController = context.watch<ChatController>();
     final user = authController.currentUser;
-    final isAdmin = authController.isAdmin;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -96,557 +54,14 @@ class _ChatListViewState extends State<ChatListView> {
       drawer: const AppDrawer(),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(27, 37, 27, 0),
-        child: isAdmin 
-            ? _buildAdminChatListNew(chatController, user) 
-            : _buildTenantChatListNew(chatController, user),
+        child: _buildTenantChatList(chatController, user),
       ),
-      floatingActionButton: !isAdmin ? _buildNewChatFAB(context, chatController, user) : null,
+      floatingActionButton: _buildNewChatFAB(context, chatController, user),
     );
   }
 
-  // Admin: Show list of all tenants to select and chat
-  Widget _buildAdminChatList(ChatController chatController, user) {
-    if (_isLoadingTenants) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    var filteredTenants = _allTenants;
-    
-    // Filter by search query
-    if (_searchQuery.isNotEmpty) {
-      filteredTenants = filteredTenants.where((tenant) {
-        return tenant.nama.toLowerCase().contains(_searchQuery);
-      }).toList();
-    }
-
-    if (filteredTenants.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              _searchQuery.isEmpty 
-                  ? Icons.people_outline 
-                  : Icons.search_off,
-              size: 64,
-              color: Colors.grey,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _searchQuery.isEmpty 
-                  ? 'Belum ada penghuni aktif' 
-                  : 'Tidak ada hasil',
-              style: AppTheme.bodyText1,
-            ),
-          ],
-        ),
-      );
-    }
-
-    return StreamBuilder<List<ChatRoomModel>>(
-      stream: chatController.streamChatRooms(
-        userId: user?.id,
-        role: user?.role,
-      ),
-      builder: (context, snapshot) {
-        final existingChatRooms = snapshot.data ?? [];
-        
-        return ListView.separated(
-          itemCount: filteredTenants.length,
-          separatorBuilder: (context, index) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final tenant = filteredTenants[index];
-            
-            // Find existing chat room for this tenant
-            final existingRoom = existingChatRooms.where((room) => 
-              room.penghuniId == tenant.id
-            ).firstOrNull;
-            
-            return ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              leading: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-                    child: Text(
-                      _getInitials(tenant.nama),
-                      style: TextStyle(
-                        color: AppTheme.primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                  // Online indicator
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              title: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      tenant.nama,
-                      style: AppTheme.bodyText1.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (existingRoom?.lastMessageTime != null)
-                    Text(
-                      Helpers.formatTime(existingRoom!.lastMessageTime!),
-                      style: AppTheme.caption.copyWith(fontSize: 11),
-                    ),
-                ],
-              ),
-              subtitle: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      existingRoom?.lastMessage ?? 'Mulai percakapan',
-                      style: AppTheme.bodyText2.copyWith(
-                        color: (existingRoom?.unreadCount ?? 0) > 0 
-                            ? Colors.black87 
-                            : Colors.grey,
-                        fontWeight: (existingRoom?.unreadCount ?? 0) > 0 
-                            ? FontWeight.w500 
-                            : FontWeight.normal,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if ((existingRoom?.unreadCount ?? 0) > 0) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${existingRoom!.unreadCount}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              onTap: () async {
-                // Create or get chat room using user_id for both
-                final penghuniUserId = tenant.userId;
-                if (penghuniUserId == null) return;
-                
-                final chatRoomId = await chatController.createOrGetChatRoom(
-                  penghuniId: penghuniUserId, // Use user_id for consistency
-                  adminId: user?.id ?? '',
-                  penghuniName: tenant.nama,
-                  adminName: user?.nama ?? 'Admin',
-                );
-                
-                if (chatRoomId != null && context.mounted) {
-                  Navigator.pushNamed(
-                    context,
-                    AppRoutes.chatRoom,
-                    arguments: {
-                      'chatRoomId': chatRoomId,
-                      'recipientName': tenant.nama,
-                      'recipientId': penghuniUserId,
-                    },
-                  );
-                }
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // Tenant: Show existing chat rooms with admin
+  // Tenant Chat List - Show chat with admin only
   Widget _buildTenantChatList(ChatController chatController, user) {
-    // Use user_id directly (simplified approach)
-    final userId = user?.id;
-    
-    return StreamBuilder<List<ChatRoomModel>>(
-      stream: chatController.streamChatRooms(
-        userId: userId,
-        role: 'tenant', // Always use 'tenant' role for query
-      ),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        
-        if (snapshot.hasError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 64,
-                  color: AppTheme.errorColor,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Terjadi kesalahan',
-                  style: AppTheme.bodyText1,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  snapshot.error.toString(),
-                  style: AppTheme.caption,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          );
-        }
-        
-        var chatRooms = snapshot.data ?? [];
-        
-        // Filter by search query
-        if (_searchQuery.isNotEmpty) {
-          chatRooms = chatRooms.where((room) {
-            return room.adminName?.toLowerCase().contains(_searchQuery) ?? false;
-          }).toList();
-        }
-        
-        if (chatRooms.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  _searchQuery.isEmpty 
-                      ? Icons.chat_bubble_outline 
-                      : Icons.search_off,
-                  size: 64,
-                  color: Colors.grey,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  _searchQuery.isEmpty 
-                      ? 'Belum ada percakapan' 
-                      : 'Tidak ada hasil',
-                  style: AppTheme.bodyText1,
-                ),
-                if (_searchQuery.isEmpty) ...[
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Tekan tombol + untuk chat dengan admin',
-                    style: AppTheme.caption,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ],
-            ),
-          );
-        }
-        
-        return ListView.separated(
-          itemCount: chatRooms.length,
-          separatorBuilder: (context, index) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final chatRoom = chatRooms[index];
-            
-            return ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              leading: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-                    child: Text(
-                      _getInitials(chatRoom.adminName ?? 'A'),
-                      style: TextStyle(
-                        color: AppTheme.primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                  // Online indicator
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              title: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      chatRoom.adminName ?? 'Admin',
-                      style: AppTheme.bodyText1.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (chatRoom.lastMessageTime != null)
-                    Text(
-                      Helpers.formatTime(chatRoom.lastMessageTime!),
-                      style: AppTheme.caption.copyWith(fontSize: 11),
-                    ),
-                ],
-              ),
-              subtitle: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      chatRoom.lastMessage ?? 'Belum ada pesan',
-                      style: AppTheme.bodyText2.copyWith(
-                        color: chatRoom.unreadCount > 0 
-                            ? Colors.black87 
-                            : Colors.grey,
-                        fontWeight: chatRoom.unreadCount > 0 
-                            ? FontWeight.w500 
-                            : FontWeight.normal,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (chatRoom.unreadCount > 0) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${chatRoom.unreadCount}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              onTap: () {
-                Navigator.pushNamed(
-                  context,
-                  AppRoutes.chatRoom,
-                  arguments: {
-                    'chatRoomId': chatRoom.id,
-                    'recipientName': chatRoom.adminName,
-                    'recipientId': chatRoom.adminId,
-                  },
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // FAB for tenant to start chat with admin
-  Widget _buildTenantFAB(BuildContext context, ChatController chatController, user) {
-    return FloatingActionButton(
-      onPressed: () async {
-        // Show loading
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(
-            child: CircularProgressIndicator(),
-          ),
-        );
-
-        try {
-          // Try to find existing admin from any chat room
-          String? adminId;
-          String adminName = 'Admin';
-          
-          // Check if there's any existing chat room with an admin
-          final existingChats = await FirebaseFirestore.instance
-              .collection(AppConfig.chatCollection)
-              .where('penghuni_id', isEqualTo: user?.id)
-              .limit(1)
-              .get();
-          
-          if (existingChats.docs.isNotEmpty) {
-            // Use existing admin_id from previous chat
-            final chatData = existingChats.docs.first.data();
-            adminId = chatData['admin_id'];
-            adminName = chatData['admin_name'] ?? 'Admin';
-          } else {
-            // No existing chat, try to find any admin from other chats
-            final anyAdminChat = await FirebaseFirestore.instance
-                .collection(AppConfig.chatCollection)
-                .where('admin_id', isNotEqualTo: 'admin') // Not placeholder
-                .limit(1)
-                .get();
-            
-            if (anyAdminChat.docs.isNotEmpty) {
-              final chatData = anyAdminChat.docs.first.data();
-              adminId = chatData['admin_id'];
-              adminName = chatData['admin_name'] ?? 'Admin';
-            }
-          }
-          
-          // If still no admin found, use placeholder
-          adminId ??= 'admin';
-          
-          // For tenant, use user_id as penghuni_id
-          final penghuniId = user?.id ?? '';
-          final penghuniName = user?.nama ?? 'Penghuni';
-          
-          // Create or get chat room with admin
-          final chatRoomId = await chatController.createOrGetChatRoom(
-            penghuniId: penghuniId,
-            adminId: adminId,
-            penghuniName: penghuniName,
-            adminName: adminName,
-          );
-          
-          if (context.mounted) {
-            Navigator.pop(context); // Close loading
-            
-            if (chatRoomId != null) {
-              Navigator.pushNamed(
-                context,
-                AppRoutes.chatRoom,
-                arguments: {
-                  'chatRoomId': chatRoomId,
-                  'recipientName': adminName,
-                  'recipientId': adminId,
-                },
-              );
-            }
-          }
-        } catch (e) {
-          if (context.mounted) {
-            Navigator.pop(context); // Close loading
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Gagal: ${e.toString()}'),
-                backgroundColor: Colors.red,
-                duration: const Duration(seconds: 3),
-              ),
-            );
-          }
-        }
-      },
-      child: const Icon(Icons.add),
-    );
-  }
-
-  String _getInitials(String name) {
-    final parts = name.trim().split(' ');
-    if (parts.isEmpty) return 'U';
-    if (parts.length == 1) return parts[0][0].toUpperCase();
-    return '${parts[0]}${parts[1][0]}'.toUpperCase();
-  }
-
-  // NEW DESIGN - Admin Chat List
-  Widget _buildAdminChatListNew(ChatController chatController, user) {
-    if (_isLoadingTenants) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    final filteredTenants = _allTenants;
-
-    if (filteredTenants.isEmpty) {
-      return Center(
-        child: Text(
-          'Belum ada penghuni aktif',
-          style: AppTheme.bodyText1.copyWith(color: Colors.grey),
-        ),
-      );
-    }
-
-    return StreamBuilder<List<ChatRoomModel>>(
-      stream: chatController.streamChatRooms(userId: user?.id, role: user?.role),
-      builder: (context, snapshot) {
-        final existingChatRooms = snapshot.data ?? [];
-        
-        return ListView.separated(
-          itemCount: filteredTenants.length,
-          separatorBuilder: (context, index) => const SizedBox(height: 19),
-          itemBuilder: (context, index) {
-            final tenant = filteredTenants[index];
-            final existingRoom = existingChatRooms.where((room) => 
-              room.penghuniId == tenant.id
-            ).firstOrNull;
-            
-            final hasUnread = (existingRoom?.unreadCount ?? 0) > 0;
-            
-            return _buildChatCard(
-              name: tenant.nama,
-              lastMessage: existingRoom?.lastMessage ?? 'Mulai percakapan',
-              time: existingRoom?.lastMessageTime != null 
-                  ? Helpers.formatTime(existingRoom!.lastMessageTime!) 
-                  : '',
-              hasUnread: hasUnread,
-              photoUrl: null,
-              onTap: () async {
-                final penghuniUserId = tenant.userId;
-                if (penghuniUserId == null) return;
-                
-                final chatRoomId = await chatController.createOrGetChatRoom(
-                  penghuniId: penghuniUserId,
-                  adminId: user?.id ?? '',
-                  penghuniName: tenant.nama,
-                  adminName: user?.nama ?? 'Admin',
-                );
-                
-                if (chatRoomId != null && context.mounted) {
-                  Navigator.pushNamed(
-                    context,
-                    AppRoutes.chatRoom,
-                    arguments: {
-                      'chatRoomId': chatRoomId,
-                      'recipientName': tenant.nama,
-                      'recipientId': penghuniUserId,
-                    },
-                  );
-                }
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // NEW DESIGN - Tenant Chat List
-  Widget _buildTenantChatListNew(ChatController chatController, user) {
     final userId = user?.id;
     
     return StreamBuilder<List<ChatRoomModel>>(
@@ -713,7 +128,7 @@ class _ChatListViewState extends State<ChatListView> {
     );
   }
 
-  // NEW DESIGN - Chat Card Widget
+  // Chat Card Widget
   Widget _buildChatCard({
     required String name,
     required String lastMessage,
@@ -755,9 +170,9 @@ class _ChatListViewState extends State<ChatListView> {
                 bottom: 0,
                 child: Container(
                   width: 5,
-                  decoration: BoxDecoration(
-                    color: isAdminChat ? const Color(0xFFA23900) : const Color(0xFFA23900),
-                    borderRadius: const BorderRadius.only(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFA23900),
+                    borderRadius: BorderRadius.only(
                       topRight: Radius.circular(12),
                       bottomRight: Radius.circular(12),
                     ),
@@ -767,20 +182,20 @@ class _ChatListViewState extends State<ChatListView> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Avatar (Always show initials, no photo)
+                // Avatar - Always show "AK" for admin
                 Container(
                   width: 56,
                   height: 56,
                   decoration: BoxDecoration(
-                    color: isAdminChat ? const Color(0xFFA23900) : const Color(0xFFF8BD45),
+                    color: const Color(0xFFA23900),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Center(
+                  child: const Center(
                     child: Text(
-                      isAdminChat ? 'AK' : _getInitials(name),
+                      'AK',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: isAdminChat ? Colors.white : const Color(0xFF271900),
+                        color: Colors.white,
                         fontSize: 19,
                         fontWeight: FontWeight.w700,
                       ),
@@ -800,8 +215,8 @@ class _ChatListViewState extends State<ChatListView> {
                           Expanded(
                             child: Text(
                               name,
-                              style: TextStyle(
-                                color: isAdminChat ? const Color(0xFFA23900) : const Color(0xFF1A1C1A),
+                              style: const TextStyle(
+                                color: Color(0xFFA23900),
                                 fontSize: 19,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -874,7 +289,7 @@ class _ChatListViewState extends State<ChatListView> {
     );
   }
 
-  // NEW FAB Design
+  // FAB - New Chat Button
   Widget _buildNewChatFAB(BuildContext context, ChatController chatController, user) {
     return Container(
       height: 52,
@@ -899,10 +314,10 @@ class _ChatListViewState extends State<ChatListView> {
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.add, color: Colors.white),
-            const SizedBox(width: 11),
-            const Text(
+          children: const [
+            Icon(Icons.add, color: Colors.white),
+            SizedBox(width: 11),
+            Text(
               'New Chat',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -917,6 +332,7 @@ class _ChatListViewState extends State<ChatListView> {
     );
   }
 
+  // Handle New Chat Button Press
   Future<void> _onNewChatPressed(BuildContext context, ChatController chatController, user) async {
     showDialog(
       context: context,
@@ -928,6 +344,7 @@ class _ChatListViewState extends State<ChatListView> {
       String? adminId;
       String adminName = 'Admin';
       
+      // Try to find existing admin from previous chats
       final existingChats = await FirebaseFirestore.instance
           .collection(AppConfig.chatCollection)
           .where('penghuni_id', isEqualTo: user?.id)
@@ -939,6 +356,7 @@ class _ChatListViewState extends State<ChatListView> {
         adminId = chatData['admin_id'];
         adminName = chatData['admin_name'] ?? 'Admin';
       } else {
+        // No existing chat, find any admin from other chats
         final anyAdminChat = await FirebaseFirestore.instance
             .collection(AppConfig.chatCollection)
             .where('admin_id', isNotEqualTo: 'admin')
@@ -983,7 +401,10 @@ class _ChatListViewState extends State<ChatListView> {
       if (context.mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal: ${e.toString()}'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Gagal: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }

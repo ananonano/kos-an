@@ -41,6 +41,25 @@ class _LoginViewState extends State<LoginView> {
     if (!mounted) return;
     
     if (success) {
+      // Check if user is admin - block admin from mobile
+      if (authController.currentUser?.role == 'admin') {
+        // Logout immediately
+        await authController.logout();
+        
+        // Show error message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Akun admin hanya bisa login melalui Web Admin.\nMobile app khusus untuk tenant/penghuni.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+        return;
+      }
+      
+      // If tenant, navigate to home
       Navigator.pushReplacementNamed(context, AppRoutes.home);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

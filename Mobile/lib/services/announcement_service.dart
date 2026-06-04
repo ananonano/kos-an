@@ -6,12 +6,17 @@ import '../models/announcement_model.dart';
 class AnnouncementService {
   static const String _endpoint = '/announcements';
 
-  // Get All Announcements
-  static Future<List<AnnouncementModel>> getAllAnnouncements({
+  // Get All Announcements with pagination
+  static Future<Map<String, dynamic>> getAllAnnouncements({
     String? prioritas,
+    int page = 1,
+    int limit = 20,
   }) async {
     try {
-      final queryParams = <String, String>{};
+      final queryParams = <String, String>{
+        'page': page.toString(),
+        'limit': limit.toString(),
+      };
       if (prioritas != null) queryParams['prioritas'] = prioritas;
 
       final response = await HttpService.get(
@@ -24,7 +29,19 @@ class AnnouncementService {
       }
 
       final List<dynamic> data = response['data'] ?? [];
-      return data.map((json) => AnnouncementModel.fromJson(json)).toList();
+      final announcements = data.map((json) => AnnouncementModel.fromJson(json)).toList();
+      
+      final pagination = response['pagination'] ?? {};
+      
+      return {
+        'announcements': announcements,
+        'pagination': {
+          'page': pagination['page'] ?? page,
+          'limit': pagination['limit'] ?? limit,
+          'total': pagination['total'] ?? 0,
+          'totalPages': pagination['totalPages'] ?? 0,
+        }
+      };
     } catch (e) {
       throw Exception('Gagal mengambil data pengumuman: ${e.toString()}');
     }

@@ -112,8 +112,8 @@ export default function LoginPage() {
 
           {/* Demo hint */}
           <div className="bg-[#A23900]/10 border border-[#A23900]/20 rounded-lg px-4 py-3">
-            <p className="text-[#FFB347] text-xs font-medium">Demo credentials:</p>
-            <p className="text-[#F4B942] text-xs">admin@kosterpadu.com / admin123</p>
+            <p className="text-[#FFB347] text-xs font-medium">Khusus Admin Kos</p>
+            <p className="text-[#F4B942] text-xs">Tenant silakan gunakan aplikasi mobile</p>
           </div>
 
           <Button type="submit" className="w-full bg-[#A23900] hover:bg-[#8B3500] text-white h-10" loading={isLoading}>

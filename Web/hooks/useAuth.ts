@@ -18,6 +18,12 @@ export function useAuth() {
       const { authService } = await import("@/services/auth.service");
       const res = await authService.login(credentials);
       if (res.success && res.token && res.user) {
+        // Check if user is admin - block tenant from logging in
+        if (res.user.role !== 'admin') {
+          setError("Akses ditolak. Web admin khusus untuk admin kos. Tenant silakan gunakan aplikasi mobile.");
+          return;
+        }
+        
         // Backend returns { success, token, user } directly
         setAuth(res.user, res.token);
         router.push("/dashboard");

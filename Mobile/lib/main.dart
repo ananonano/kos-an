@@ -21,7 +21,6 @@ import 'controllers/bill_controller.dart';
 import 'controllers/payment_controller.dart';
 import 'controllers/announcement_controller.dart';
 import 'controllers/tenant_controller.dart';
-import 'controllers/dashboard_controller.dart';
 import 'controllers/notification_controller.dart';
 import 'controllers/maintenance_controller.dart';
 
@@ -79,7 +78,6 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PaymentController()),
         ChangeNotifierProvider(create: (_) => AnnouncementController()),
         ChangeNotifierProvider(create: (_) => TenantController()),
-        ChangeNotifierProvider(create: (_) => DashboardController()),
         ChangeNotifierProvider(create: (_) => NotificationController()),
         ChangeNotifierProvider(create: (_) => MaintenanceController()),
       ],

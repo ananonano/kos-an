@@ -68,17 +68,17 @@ class NotificationModel {
   String get typeIcon {
     switch (type) {
       case 'payment':
-        return '💳';
+        return 'payment';
       case 'bill':
-        return '🧾';
+        return 'receipt_long';
       case 'maintenance':
-        return '🔧';
+        return 'build';
       case 'announcement':
-        return '📢';
+        return 'campaign';
       case 'system':
-        return '⚙️';
+        return 'settings';
       default:
-        return '🔔';
+        return 'notifications';
     }
   }
 }

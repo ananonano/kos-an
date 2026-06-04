@@ -44,9 +44,6 @@ class _MaintenanceListViewState extends State<MaintenanceListView> with SingleTi
   
   @override
   Widget build(BuildContext context) {
-    final authController = context.watch<AuthController>();
-    final isAdmin = authController.currentUser?.role == 'admin';
-    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Keluhan'),
@@ -109,7 +106,7 @@ class _MaintenanceListViewState extends State<MaintenanceListView> with SingleTi
           );
         },
       ),
-      floatingActionButton: !isAdmin ? FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final result = await Navigator.pushNamed(context, AppRoutes.createMaintenance);
           if (result == true) {
@@ -118,7 +115,7 @@ class _MaintenanceListViewState extends State<MaintenanceListView> with SingleTi
         },
         icon: const Icon(Icons.add),
         label: const Text('Buat Laporan'),
-      ) : null,
+      ),
     );
   }
   

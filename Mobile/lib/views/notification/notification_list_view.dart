@@ -211,11 +211,10 @@ class _NotificationListViewState extends State<NotificationListView>
                   color: typeColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Center(
-                  child: Text(
-                    notification.typeIcon,
-                    style: const TextStyle(fontSize: 24),
-                  ),
+                child: Icon(
+                  _getIconData(notification.typeIcon),
+                  color: typeColor,
+                  size: 24,
                 ),
               ),
               const SizedBox(width: 12),
@@ -310,6 +309,25 @@ class _NotificationListViewState extends State<NotificationListView>
       return '${difference.inMinutes} menit lalu';
     } else {
       return 'Baru saja';
+    }
+  }
+
+  IconData _getIconData(String iconName) {
+    switch (iconName) {
+      case 'payment':
+        return Icons.payment;
+      case 'receipt_long':
+        return Icons.receipt_long;
+      case 'build':
+        return Icons.build;
+      case 'campaign':
+        return Icons.campaign;
+      case 'settings':
+        return Icons.settings;
+      case 'notifications':
+        return Icons.notifications;
+      default:
+        return Icons.notifications;
     }
   }
 

@@ -8,15 +8,24 @@ import { useUIStore } from "@/store/ui.store";
 import { cn } from "@/lib/utils";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
   const { sidebarCollapsed } = useUIStore();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isAuthenticated) router.push("/login");
-  }, [isAuthenticated, router]);
+    if (!isAuthenticated) {
+      router.push("/login");
+      return;
+    }
+    
+    // Block tenant from accessing web dashboard
+    if (user?.role !== 'admin') {
+      logout();
+      router.push("/login");
+    }
+  }, [isAuthenticated, user, router, logout]);
 
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated || user?.role !== 'admin') return null;
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">

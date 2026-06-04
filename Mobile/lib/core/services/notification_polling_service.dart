@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/announcement_service.dart';
+import '../../models/announcement_model.dart';
 import './local_notification_service.dart';
 
 /// Notification Polling Service
@@ -49,7 +50,8 @@ class NotificationPollingService {
       debugPrint('🔍 Checking for new announcements...');
 
       // Get all announcements from backend (they include isRead status)
-      final announcements = await AnnouncementService.getAllAnnouncements();
+      final result = await AnnouncementService.getAllAnnouncements();
+      final announcements = result['announcements'] as List<AnnouncementModel>;
 
       if (announcements.isEmpty) {
         debugPrint('📭 No announcements found');
@@ -67,7 +69,7 @@ class NotificationPollingService {
         return;
       }
 
-      debugPrint('🔔 Found ${newAnnouncements.length} new announcements');
+      debugPrint('Found ${newAnnouncements.length} new announcements');
 
       // Show system notifications for new announcements
       for (var announcement in newAnnouncements) {

@@ -40,7 +40,6 @@ class _AppDrawerState extends State<AppDrawer> {
   Widget build(BuildContext context) {
     final authController = context.watch<AuthController>();
     final user = authController.currentUser;
-    final isAdmin = authController.isAdmin;
 
     return Drawer(
       child: ListView(
@@ -103,9 +102,9 @@ class _AppDrawerState extends State<AppDrawer> {
                     color: Colors.white.withValues(alpha: 0.25),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(
-                    isAdmin ? 'Admin' : 'Penghuni',
-                    style: const TextStyle(
+                  child: const Text(
+                    'Penghuni',
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -159,154 +158,69 @@ class _AppDrawerState extends State<AppDrawer> {
 
           const Divider(),
 
-          // Menu Items based on role
-          if (isAdmin) ...[
-            // Admin Menu Items
-            ListTile(
-              leading: const Icon(Icons.people),
-              title: const Text('Penghuni'),
-              subtitle: const Text('Kelola data penghuni'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.tenantList);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.meeting_room),
-              title: const Text('Kamar'),
-              subtitle: const Text('Kelola data kamar'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.kamarList);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.receipt_long),
-              title: const Text('Tagihan'),
-              subtitle: const Text('Kelola tagihan'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.billList);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.payment),
-              title: const Text('Pembayaran'),
-              subtitle: const Text('Verifikasi pembayaran'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.paymentHistory);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.campaign),
-              title: const Text('Pengumuman'),
-              subtitle: const Text('Kelola pengumuman'),
-              trailing: _unreadAnnouncementCount > 0
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(12),
+          // Tenant Menu Items - Personal
+          ListTile(
+            leading: const Icon(Icons.receipt_long, color: Colors.orange),
+            title: const Text('Tagihan Saya'),
+            subtitle: const Text('Tagihan bulanan'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushReplacementNamed(context, AppRoutes.billList);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.payment, color: Colors.green),
+            title: const Text('Pembayaran Saya'),
+            subtitle: const Text('Riwayat bayar'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushReplacementNamed(context, AppRoutes.paymentHistory);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.build, color: Colors.red),
+            title: const Text('Keluhan Saya'),
+            subtitle: const Text('Lapor masalah kamar'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushReplacementNamed(context, AppRoutes.maintenanceList);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.campaign, color: Colors.purple),
+            title: const Text('Pengumuman'),
+            subtitle: const Text('Info penting'),
+            trailing: _unreadAnnouncementCount > 0
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      _unreadAnnouncementCount > 99 ? '99+' : _unreadAnnouncementCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
                       ),
-                      child: Text(
-                        _unreadAnnouncementCount > 99 ? '99+' : _unreadAnnouncementCount.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    )
-                  : null,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.announcementList);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.build),
-              title: const Text('Keluhan'),
-              subtitle: const Text('Kelola keluhan'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.maintenanceList);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.chat),
-              title: const Text('Chat'),
-              subtitle: const Text('Chat dengan penghuni'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.chatList);
-              },
-            ),
-          ] else ...[
-            // Tenant Menu Items - Personal
-            ListTile(
-              leading: const Icon(Icons.receipt_long, color: Colors.orange),
-              title: const Text('Tagihan Saya'),
-              subtitle: const Text('Tagihan bulanan'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.billList);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.payment, color: Colors.green),
-              title: const Text('Pembayaran Saya'),
-              subtitle: const Text('Riwayat bayar'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.paymentHistory);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.build, color: Colors.red),
-              title: const Text('Keluhan Saya'),
-              subtitle: const Text('Lapor masalah kamar'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.maintenanceList);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.campaign, color: Colors.purple),
-              title: const Text('Pengumuman'),
-              subtitle: const Text('Info penting'),
-              trailing: _unreadAnnouncementCount > 0
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _unreadAnnouncementCount > 99 ? '99+' : _unreadAnnouncementCount.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    )
-                  : null,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.announcementList);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.chat, color: Colors.teal),
-              title: const Text('Chat Admin'),
-              subtitle: const Text('Hubungi admin'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.chatList);
-              },
-            ),
-          ],
+                    ),
+                  )
+                : null,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushReplacementNamed(context, AppRoutes.announcementList);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.chat, color: Colors.teal),
+            title: const Text('Chat Admin'),
+            subtitle: const Text('Hubungi admin'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushReplacementNamed(context, AppRoutes.chatList);
+            },
+          ),
 
           const Divider(),
 

@@ -109,7 +109,6 @@ class _ProfileViewState extends State<ProfileView> {
   Widget build(BuildContext context) {
     final authController = context.watch<AuthController>();
     final user = authController.currentUser;
-    final isAdmin = authController.isAdmin;
     
     // Get tenant info if available
     final tenantController = context.watch<TenantController>();
@@ -194,7 +193,7 @@ class _ProfileViewState extends State<ProfileView> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        isAdmin ? 'ADMIN' : 'PENGHUNI',
+                        'PENGHUNI',
                         textAlign: TextAlign.center,
                         style: AppTheme.bodyText2.copyWith(
                           color: AppTheme.accentColor,

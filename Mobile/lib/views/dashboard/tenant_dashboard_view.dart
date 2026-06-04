@@ -75,7 +75,7 @@ class _TenantDashboardViewState extends State<TenantDashboardView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Halo, ${user?.nama ?? 'Penghuni'}! 🔑',
+                          'Halo, ${user?.nama ?? 'Penghuni'}!',
                           style: AppTheme.heading2.copyWith(color: Colors.white),
                         ),
                         const SizedBox(height: 5),

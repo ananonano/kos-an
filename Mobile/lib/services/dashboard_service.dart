@@ -1,29 +1,11 @@
 import '../core/services/http_service.dart';
 
 /// Dashboard Service
-/// Mengelola operasi dashboard
+/// Mengelola operasi dashboard untuk tenant
 class DashboardService {
-  static const String _endpoint = '/dashboard';
-
-  // Get Admin Dashboard
-  static Future<Map<String, dynamic>> getAdminDashboard() async {
-    try {
-      print('🔍 [DashboardService] Getting admin dashboard...');
-      
-      final response = await HttpService.get('$_endpoint/admin');
-      
-      print('✅ [DashboardService] Response received: ${response['success']}');
-      
-      if (response['success'] != true) {
-        throw Exception(response['message'] ?? 'Gagal mengambil data dashboard');
-      }
-      
-      return response['data'];
-    } catch (e) {
-      print('❌ [DashboardService] Error: $e');
-      throw Exception('Gagal mengambil data dashboard: ${e.toString()}');
-    }
-  }
+  // Note: Dashboard data untuk tenant diambil langsung dari endpoints masing-masing
+  // (bills, payments, maintenance, announcements)
+  // Service ini bisa dihapus jika tidak digunakan
   
   // Get Pending Payments
   static Future<List<dynamic>> getPendingPayments() async {

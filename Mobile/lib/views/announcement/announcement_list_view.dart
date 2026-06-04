@@ -14,15 +14,34 @@ class AnnouncementListView extends StatefulWidget {
 }
 
 class _AnnouncementListViewState extends State<AnnouncementListView> {
+  final ScrollController _scrollController = ScrollController();
+  
   @override
   void initState() {
     super.initState();
     _loadAnnouncements();
+    _scrollController.addListener(_onScroll);
+  }
+  
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+  
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      final announcementController = context.read<AnnouncementController>();
+      if (!announcementController.isLoadingMore && announcementController.hasMore) {
+        announcementController.loadMoreAnnouncements();
+      }
+    }
   }
   
   Future<void> _loadAnnouncements() async {
     final announcementController = context.read<AnnouncementController>();
-    await announcementController.getAllAnnouncements();
+    await announcementController.getAllAnnouncements(refresh: true);
   }
   
   @override
@@ -95,9 +114,22 @@ class _AnnouncementListViewState extends State<AnnouncementListView> {
           return RefreshIndicator(
             onRefresh: _loadAnnouncements,
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(27),
-              itemCount: announcements.length,
+              itemCount: announcements.length + (announcementController.hasMore ? 1 : 0),
               itemBuilder: (context, index) {
+                // Show loading indicator at the bottom
+                if (index == announcements.length) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: announcementController.isLoadingMore
+                          ? const CircularProgressIndicator()
+                          : const SizedBox.shrink(),
+                    ),
+                  );
+                }
+                
                 final announcement = announcements[index];
                 return _buildCard(announcement);
               },
