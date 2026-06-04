@@ -1,0 +1,2 @@
+Force redeploy timestamp: 2026-06-04 16:30:00
+This file is used to trigger GitHub Actions deployment when no code changes exist.
