@@ -284,60 +284,107 @@ Lihat [PROJECT_ROADMAP.md](./PROJECT_ROADMAP.md) untuk detail tugas.
 
 ## 📚 Dokumentasi
 
-### Dokumentasi Utama:
-- [README.md](./README.md) - Overview (file ini)
-- [QUICK_START.md](./QUICK_START.md) - Setup guide
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture
-- [PROJECT_ROADMAP.md](./PROJECT_ROADMAP.md) - Development plan
-- [PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md) - Project summary
+### 🚀 Getting Started:
+- [QUICK-START.md](./QUICK-START.md) - ⚡ Fast setup & testing guide
+- [README.md](./README.md) - 📖 Project overview (file ini)
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - 🏗️ System architecture
+- [PROJECT_ROADMAP.md](./PROJECT_ROADMAP.md) - 🗺️ Development plan
+- [PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md) - 📊 Project summary
 
-### Dokumentasi Spesifik:
-- [Backend README](./Backend/README.md) - Backend API docs
-- [Mobile README](./Mobile/README.md) - Mobile app docs
+### ☁️ Deployment & CI/CD:
+- [CICD-SETUP.md](./CICD-SETUP.md) - 🔄 GitHub Actions auto-deploy guide
+- [.github/workflows/](./github/workflows/) - 🤖 Deployment workflows
+
+### 💾 Database & Migration:
+- [DATA-MIGRATION.md](./DATA-MIGRATION.md) - 📦 PostgreSQL data migration guide
+- [SCRIPTS-README.md](./SCRIPTS-README.md) - 🛠️ Migration scripts documentation
+- [NETWORK-ISSUE-SOLUTION.md](./NETWORK-ISSUE-SOLUTION.md) - 🔌 Network connectivity solutions
+
+### 📁 Component Documentation:
+- [Backend/README.md](./Backend/README.md) - 🔧 Backend API documentation
+- [Web/README.md](./Web/README.md) - 🌐 Web dashboard documentation
+- [Mobile/README.md](./Mobile/README.md) - 📱 Mobile app documentation
 
 ---
 
 ## 📊 Progress
 
-### Overall: 30%
+### Overall: 85% ✅ DEPLOYED TO PRODUCTION
 
-- ✅ Backend foundation (40%)
-- ⏳ Web frontend (20%)
-- ✅ Mobile app (80%)
-- ⏳ Deployment (10%)
+- ✅ Backend API (100%) - LIVE on Cloud Run
+- ✅ Database (100%) - PostgreSQL Cloud SQL + Migrations + Dummy Data
+- ✅ Web Frontend (100%) - LIVE on Cloud Run
+- ✅ CI/CD Pipeline (100%) - GitHub Actions configured
+- ⏳ Mobile App (80%) - Need to update backend URL & build APK
+- ⏳ Real Data Migration (0%) - Optional, scripts ready
 
-Lihat [PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md) untuk detail progress.
+### 🌐 Production URLs:
+- **Backend:** https://kosan-backend-670153358279.asia-southeast2.run.app
+- **Web:** https://kosan-web-670153358279.asia-southeast2.run.app
+- **Database:** Cloud SQL PostgreSQL (34.50.122.143:5432)
+
+### 🔑 Test Credentials (Dummy Data):
+- **Admin:** admin@kosterpadu.com / admin123
+- **Tenant:** budi@email.com / tenant123
+
+Lihat [QUICK-START.md](./QUICK-START.md) untuk testing & [PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md) untuk detail progress.
 
 ---
 
 ## 🔐 Default Credentials
 
-Setelah run `npm run db:seed`:
+**Production (Cloud SQL - Dummy Data):**
 
-**Admin:**
-- Email: `admin@kosterpadu.com`
-- Password: `admin123`
+| Role | Email | Password | Access |
+|------|-------|----------|--------|
+| **Admin** | admin@kosterpadu.com | admin123 | Web Dashboard |
+| **Tenant** | budi@email.com | tenant123 | Mobile App |
 
-**Tenant:**
-- Email: `budi@email.com`
-- Password: `tenant123`
+**Additional Tenant Accounts:**
+- ani@email.com / tenant123
+- citra@email.com / tenant123
+- doni@email.com / tenant123
+
+**Note:** Credentials akan berubah setelah real data migration.
 
 ---
 
 ## 🚢 Deployment
 
-### Development
-- Backend: `http://localhost:5000`
-- Web: `http://localhost:3000`
-- Mobile: Android Emulator
+### ✅ Production (LIVE)
 
-### Production
-- Backend: Cloud Run
-- Web: App Engine
-- Database: Cloud SQL
-- Storage: Cloud Storage + Firebase
+| Service | Platform | URL | Status |
+|---------|----------|-----|--------|
+| **Backend API** | Cloud Run | https://kosan-backend-670153358279.asia-southeast2.run.app | ✅ LIVE |
+| **Web Dashboard** | Cloud Run | https://kosan-web-670153358279.asia-southeast2.run.app | ✅ LIVE |
+| **Database** | Cloud SQL | PostgreSQL (34.50.122.143:5432) | ✅ READY |
+| **CI/CD** | GitHub Actions | Auto-deploy on push | ✅ ACTIVE |
 
-Lihat deployment guide di masing-masing folder.
+### 🔄 CI/CD Pipeline
+
+**Automatic deployment on:**
+- Push to `main` branch with `Backend/**` changes → Deploy Backend
+- Push to `main` branch with `Web/**` changes → Deploy Web
+
+**Monitor deployments:**
+- GitHub Actions: Repository → Actions tab
+- GCP Console: https://console.cloud.google.com/run?project=g-43-491016
+
+### 📱 Mobile Deployment
+
+```bash
+cd Mobile
+# Update backend URL to production
+# Edit lib/config/api_config.dart
+
+flutter build apk --release
+# Output: build/app/outputs/flutter-apk/app-release.apk
+```
+
+### 📖 Deployment Guides:
+- [CICD-SETUP.md](./CICD-SETUP.md) - Complete CI/CD configuration
+- [DATA-MIGRATION.md](./DATA-MIGRATION.md) - Database migration guide
+- [QUICK-START.md](./QUICK-START.md) - Testing deployed services
 
 ---
 

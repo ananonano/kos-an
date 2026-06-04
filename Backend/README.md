@@ -65,6 +65,16 @@ CLOUD_STORAGE_BUCKET=your_bucket_name
 
 ## Database Setup
 
+### Cloud SQL PostgreSQL (Production)
+
+**Already configured and running!**
+- Host: `34.50.122.143`
+- Database: `kosterpadu_db`
+- Migrations: ✅ Completed (10 tables)
+- Dummy Data: ✅ Seeded
+
+### Local Development
+
 1. Create PostgreSQL database:
 ```sql
 CREATE DATABASE kos_terpadu;
@@ -79,6 +89,16 @@ npm run migrate
 ```bash
 npm run seed
 ```
+
+### Data Migration from Existing Database
+
+Need to migrate real data from local PostgreSQL server?
+
+See **[Data Migration Guide](../DATA-MIGRATION.md)** for complete instructions on:
+- Exporting data from source PostgreSQL server
+- Importing to Cloud SQL
+- Network connectivity solutions
+- Migration scripts and tools
 
 ## Running the Application
 
