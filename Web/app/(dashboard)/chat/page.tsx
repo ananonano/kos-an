@@ -66,8 +66,9 @@ export default function ChatPage() {
     }
     
     try {
+      const adminIdString = String(user.id); // Force to string
       console.log("🔍 [ChatPage] Current user:", user);
-      console.log("🔍 [ChatPage] Querying chat rooms for admin_id:", user.id.toString());
+      console.log("🔍 [ChatPage] Querying chat rooms for admin_id:", adminIdString, "(type:", typeof adminIdString, ")");
       
       const chatRoomsRef = collection(db, "chats");
       
@@ -76,14 +77,15 @@ export default function ChatPage() {
       const debugUnsubscribe = onSnapshot(debugQuery, (snapshot) => {
         console.log("🐛 [DEBUG] All chats in Firestore:", snapshot.docs.length);
         snapshot.docs.forEach(doc => {
-          console.log("🐛 [DEBUG] Chat doc:", doc.id, doc.data());
+          const data = doc.data();
+          console.log("🐛 [DEBUG] Chat doc:", doc.id, "admin_id:", data.admin_id, "(type:", typeof data.admin_id, ")");
         });
       });
       
-      // Actual query with filter
+      // Actual query with filter - use STRING comparison
       const q = query(
         chatRoomsRef,
-        where("admin_id", "==", user.id.toString())
+        where("admin_id", "==", adminIdString)
       );
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
