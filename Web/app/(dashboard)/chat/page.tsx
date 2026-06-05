@@ -1,6 +1,6 @@
 ﻿"use client";
 import { useState, useRef, useEffect } from "react";
-import { Send, ImageIcon, Search } from "lucide-react";
+import { Send, ImageIcon, Search, AlertCircle } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,73 +55,87 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Stream chat rooms for admin
   useEffect(() => {
-    if (!user) return;
-    
-    console.log("🔍 [ChatPage] Querying chat rooms for admin_id:", user.id.toString());
-    
-    const chatRoomsRef = collection(db, "chats");  // ✅ Changed from "chat_rooms" to "chats"
-    const q = query(
-      chatRoomsRef,
-      where("admin_id", "==", user.id.toString())
-    );
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log("📦 [ChatPage] Received snapshot, docs count:", snapshot.docs.length);
-      
-      // Sort manually in JavaScript instead of Firestore
-      const rooms: ChatRoom[] = snapshot.docs
-        .map(doc => {
-          const data = doc.data();
-          console.log("[ChatPage] Chat room doc:", doc.id, data);
-          return {
-            id: doc.id,
-            ...data as Omit<ChatRoom, 'id'>
-          };
-        })
-        .sort((a, b) => {
-          const timeA = a.updatedAt?.toMillis() || 0;
-          const timeB = b.updatedAt?.toMillis() || 0;
-          return timeB - timeA; // descending
-        });
-      
-      console.log("✅ [ChatPage] Processed rooms:", rooms);
-      setChatRooms(rooms);
+    if (!user) {
       setLoading(false);
+      return;
+    }
+    
+    try {
+      console.log("🔍 [ChatPage] Querying chat rooms for admin_id:", user.id.toString());
       
-      // Auto-select first room if none selected
-      if (!selectedRoom && rooms.length > 0) {
-        setSelectedRoom(rooms[0]);
-      }
-    }, (error) => {
-      console.error("❌ [ChatPage] Error fetching chat rooms:", error);
-      setLoading(false);
-    });
+      const chatRoomsRef = collection(db, "chats");
+      const q = query(
+        chatRoomsRef,
+        where("admin_id", "==", user.id.toString())
+      );
+      
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        console.log("📦 [ChatPage] Received snapshot, docs count:", snapshot.docs.length);
+        
+        const rooms: ChatRoom[] = snapshot.docs
+          .map(doc => {
+            const data = doc.data();
+            console.log("[ChatPage] Chat room doc:", doc.id, data);
+            return {
+              id: doc.id,
+              ...data as Omit<ChatRoom, 'id'>
+            };
+          })
+          .sort((a, b) => {
+            const timeA = a.updatedAt?.toMillis() || 0;
+            const timeB = b.updatedAt?.toMillis() || 0;
+            return timeB - timeA;
+          });
+        
+        console.log("✅ [ChatPage] Processed rooms:", rooms);
+        setChatRooms(rooms);
+        setLoading(false);
+        setError(null);
+        
+        if (!selectedRoom && rooms.length > 0) {
+          setSelectedRoom(rooms[0]);
+        }
+      }, (error) => {
+        console.error("❌ [ChatPage] Error fetching chat rooms:", error);
+        setError("Gagal memuat chat. " + error.message);
+        setLoading(false);
+      });
 
-    return () => unsubscribe();
+      return () => unsubscribe();
+    } catch (err: any) {
+      console.error("❌ [ChatPage] Exception in useEffect:", err);
+      setError("Terjadi kesalahan: " + err.message);
+      setLoading(false);
+    }
   }, [user]);
 
   // Stream messages for selected room
   useEffect(() => {
     if (!selectedRoom) return;
     
-    const messagesRef = collection(db, "chats", selectedRoom.id, "messages");  // ✅ Changed from "chat_rooms" to "chats"
-    const q = query(messagesRef, orderBy("createdAt", "asc"));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs: ChatMessageFS[] = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data() as Omit<ChatMessageFS, 'id'>
-      }));
-      setMessages(msgs);
-    }, (error) => {
-      console.error("Error fetching messages:", error);
-    });
+    try {
+      const messagesRef = collection(db, "chats", selectedRoom.id, "messages");
+      const q = query(messagesRef, orderBy("createdAt", "asc"));
+      
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const msgs: ChatMessageFS[] = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data() as Omit<ChatMessageFS, 'id'>
+        }));
+        setMessages(msgs);
+      }, (error) => {
+        console.error("Error fetching messages:", error);
+      });
 
-    return () => unsubscribe();
+      return () => unsubscribe();
+    } catch (err) {
+      console.error("Exception fetching messages:", err);
+    }
   }, [selectedRoom]);
 
   // Auto scroll to bottom when messages change
@@ -137,7 +151,7 @@ export default function ChatPage() {
     if (!input.trim() || !selectedRoom || !user) return;
     
     try {
-      const messagesRef = collection(db, "chats", selectedRoom.id, "messages");  // ✅ Changed from "chat_rooms" to "chats"
+      const messagesRef = collection(db, "chats", selectedRoom.id, "messages");
       
       await addDoc(messagesRef, {
         chat_room_id: selectedRoom.id,
@@ -150,8 +164,7 @@ export default function ChatPage() {
         updatedAt: serverTimestamp(),
       });
       
-      // Update chat room last message
-      const roomRef = doc(db, "chats", selectedRoom.id);  // ✅ Changed from "chat_rooms" to "chats"
+      const roomRef = doc(db, "chats", selectedRoom.id);
       await updateDoc(roomRef, {
         last_message: input.trim(),
         last_message_time: serverTimestamp(),
@@ -161,6 +174,7 @@ export default function ChatPage() {
       setInput("");
     } catch (error) {
       console.error("Error sending message:", error);
+      alert("Gagal mengirim pesan. Coba lagi.");
     }
   };
 
@@ -173,7 +187,16 @@ export default function ChatPage() {
     <div className="space-y-4">
       <PageHeader title="Chat" description="Komunikasi realtime dengan penghuni" />
 
-      {loading ? (
+      {error ? (
+        <div className="flex items-center justify-center h-[calc(100vh-220px)]">
+          <div className="text-center max-w-md">
+            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Terjadi Kesalahan</h3>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>Muat Ulang</Button>
+          </div>
+        </div>
+      ) : loading ? (
         <div className="flex items-center justify-center h-[calc(100vh-220px)]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
