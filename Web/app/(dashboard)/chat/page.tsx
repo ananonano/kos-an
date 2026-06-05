@@ -58,73 +58,87 @@ export default function ChatPage() {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Stream chat rooms for admin
+  // Stream chat rooms for admin - SIMPLIFIED VERSION
   useEffect(() => {
     if (!user) {
       setLoading(false);
+      setError("User belum login");
       return;
     }
     
+    setLoading(true);
+    setError(null);
+    
     try {
-      const adminIdString = String(user.id); // Force to string
-      console.log("🔍 [ChatPage] Current user:", user);
-      console.log("🔍 [ChatPage] User ID:", user.id, "Type:", typeof user.id);
-      console.log("🔍 [ChatPage] Admin ID String:", adminIdString, "Type:", typeof adminIdString);
+      console.log("🚀 [ChatPage] Starting chat query...");
+      console.log("📍 User:", user.id, user.email);
       
       const chatRoomsRef = collection(db, "chats");
       
-      // TEMPORARY: Show ALL chats without filter for debugging
-      const q = query(chatRoomsRef);
-      
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        console.log("📦 [ChatPage] ALL chats snapshot (no filter), docs count:", snapshot.docs.length);
-        
-        snapshot.docs.forEach(doc => {
-          const data = doc.data();
-          console.log("🐛 [DEBUG] Chat:", doc.id);
-          console.log("  - admin_id:", data.admin_id, "Type:", typeof data.admin_id);
-          console.log("  - penghuni_id:", data.penghuni_id);
-          console.log("  - penghuni_name:", data.penghuni_name);
-          console.log("  - Match?", data.admin_id === adminIdString, `(${data.admin_id} === ${adminIdString})`);
-        });
-        
-        const rooms: ChatRoom[] = snapshot.docs
-          .map(doc => {
+      // NO FILTER - Get ALL chats
+      const unsubscribe = onSnapshot(
+        chatRoomsRef,
+        (snapshot) => {
+          console.log("✅ Firestore snapshot received:", snapshot.docs.length, "documents");
+          
+          if (snapshot.empty) {
+            console.warn("⚠️ No documents in 'chats' collection");
+            setChatRooms([]);
+            setLoading(false);
+            return;
+          }
+          
+          const rooms: ChatRoom[] = [];
+          snapshot.forEach((doc) => {
             const data = doc.data();
-            return {
+            console.log("📄 Chat document:", doc.id, data);
+            rooms.push({
               id: doc.id,
-              ...data as Omit<ChatRoom, 'id'>
-            };
-          })
-          .sort((a, b) => {
-            const timeA = a.updatedAt?.toMillis() || 0;
-            const timeB = b.updatedAt?.toMillis() || 0;
+              admin_id: data.admin_id,
+              penghuni_id: data.penghuni_id,
+              admin_name: data.admin_name,
+              penghuni_name: data.penghuni_name,
+              last_message: data.last_message,
+              last_message_time: data.last_message_time,
+              unread_count: data.unread_count || 0,
+              createdAt: data.createdAt,
+              updatedAt: data.updatedAt,
+            });
+          });
+          
+          // Sort by updated time
+          rooms.sort((a, b) => {
+            const timeA = a.updatedAt?.toMillis?.() || 0;
+            const timeB = b.updatedAt?.toMillis?.() || 0;
             return timeB - timeA;
           });
-        
-        console.log("✅ [ChatPage] Total rooms loaded:", rooms.length);
-        setChatRooms(rooms);
-        setLoading(false);
-        setError(null);
-        
-        if (!selectedRoom && rooms.length > 0) {
-          setSelectedRoom(rooms[0]);
+          
+          console.log("✅ Total rooms loaded:", rooms.length);
+          setChatRooms(rooms);
+          setLoading(false);
+          
+          if (rooms.length > 0 && !selectedRoom) {
+            setSelectedRoom(rooms[0]);
+            console.log("✅ Auto-selected first room");
+          }
+        },
+        (error) => {
+          console.error("❌ Firestore error:", error);
+          setError(`Error: ${error.message}`);
+          setLoading(false);
         }
-      }, (error) => {
-        console.error("❌ [ChatPage] Error fetching chat rooms:", error);
-        setError("Gagal memuat chat. " + error.message);
-        setLoading(false);
-      });
+      );
 
       return () => {
+        console.log("🧹 Cleaning up subscription");
         unsubscribe();
       };
     } catch (err: any) {
-      console.error("❌ [ChatPage] Exception in useEffect:", err);
-      setError("Terjadi kesalahan: " + err.message);
+      console.error("❌ Exception:", err);
+      setError(`Exception: ${err.message}`);
       setLoading(false);
     }
-  }, [user]);
+  }, [user, selectedRoom]);
 
   // Stream messages for selected room
   useEffect(() => {
