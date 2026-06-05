@@ -68,33 +68,29 @@ export default function ChatPage() {
     try {
       const adminIdString = String(user.id); // Force to string
       console.log("🔍 [ChatPage] Current user:", user);
-      console.log("🔍 [ChatPage] Querying chat rooms for admin_id:", adminIdString, "(type:", typeof adminIdString, ")");
+      console.log("🔍 [ChatPage] User ID:", user.id, "Type:", typeof user.id);
+      console.log("🔍 [ChatPage] Admin ID String:", adminIdString, "Type:", typeof adminIdString);
       
       const chatRoomsRef = collection(db, "chats");
       
-      // DEBUG: Query all chats first to see structure
-      const debugQuery = query(chatRoomsRef);
-      const debugUnsubscribe = onSnapshot(debugQuery, (snapshot) => {
-        console.log("🐛 [DEBUG] All chats in Firestore:", snapshot.docs.length);
-        snapshot.docs.forEach(doc => {
-          const data = doc.data();
-          console.log("🐛 [DEBUG] Chat doc:", doc.id, "admin_id:", data.admin_id, "(type:", typeof data.admin_id, ")");
-        });
-      });
-      
-      // Actual query with filter - use STRING comparison
-      const q = query(
-        chatRoomsRef,
-        where("admin_id", "==", adminIdString)
-      );
+      // TEMPORARY: Show ALL chats without filter for debugging
+      const q = query(chatRoomsRef);
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        console.log("📦 [ChatPage] Filtered snapshot, docs count:", snapshot.docs.length);
+        console.log("📦 [ChatPage] ALL chats snapshot (no filter), docs count:", snapshot.docs.length);
+        
+        snapshot.docs.forEach(doc => {
+          const data = doc.data();
+          console.log("🐛 [DEBUG] Chat:", doc.id);
+          console.log("  - admin_id:", data.admin_id, "Type:", typeof data.admin_id);
+          console.log("  - penghuni_id:", data.penghuni_id);
+          console.log("  - penghuni_name:", data.penghuni_name);
+          console.log("  - Match?", data.admin_id === adminIdString, `(${data.admin_id} === ${adminIdString})`);
+        });
         
         const rooms: ChatRoom[] = snapshot.docs
           .map(doc => {
             const data = doc.data();
-            console.log("[ChatPage] Chat room doc:", doc.id, data);
             return {
               id: doc.id,
               ...data as Omit<ChatRoom, 'id'>
@@ -106,7 +102,7 @@ export default function ChatPage() {
             return timeB - timeA;
           });
         
-        console.log("✅ [ChatPage] Processed rooms:", rooms);
+        console.log("✅ [ChatPage] Total rooms loaded:", rooms.length);
         setChatRooms(rooms);
         setLoading(false);
         setError(null);
@@ -122,7 +118,6 @@ export default function ChatPage() {
 
       return () => {
         unsubscribe();
-        debugUnsubscribe();
       };
     } catch (err: any) {
       console.error("❌ [ChatPage] Exception in useEffect:", err);
