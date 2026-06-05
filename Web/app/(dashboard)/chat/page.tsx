@@ -66,16 +66,28 @@ export default function ChatPage() {
     }
     
     try {
+      console.log("🔍 [ChatPage] Current user:", user);
       console.log("🔍 [ChatPage] Querying chat rooms for admin_id:", user.id.toString());
       
       const chatRoomsRef = collection(db, "chats");
+      
+      // DEBUG: Query all chats first to see structure
+      const debugQuery = query(chatRoomsRef);
+      const debugUnsubscribe = onSnapshot(debugQuery, (snapshot) => {
+        console.log("🐛 [DEBUG] All chats in Firestore:", snapshot.docs.length);
+        snapshot.docs.forEach(doc => {
+          console.log("🐛 [DEBUG] Chat doc:", doc.id, doc.data());
+        });
+      });
+      
+      // Actual query with filter
       const q = query(
         chatRoomsRef,
         where("admin_id", "==", user.id.toString())
       );
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        console.log("📦 [ChatPage] Received snapshot, docs count:", snapshot.docs.length);
+        console.log("📦 [ChatPage] Filtered snapshot, docs count:", snapshot.docs.length);
         
         const rooms: ChatRoom[] = snapshot.docs
           .map(doc => {
@@ -106,7 +118,10 @@ export default function ChatPage() {
         setLoading(false);
       });
 
-      return () => unsubscribe();
+      return () => {
+        unsubscribe();
+        debugUnsubscribe();
+      };
     } catch (err: any) {
       console.error("❌ [ChatPage] Exception in useEffect:", err);
       setError("Terjadi kesalahan: " + err.message);
