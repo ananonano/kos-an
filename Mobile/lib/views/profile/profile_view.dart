@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/tenant_controller.dart';
+import '../../services/auth_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../routes/app_routes.dart';
 
@@ -45,22 +46,50 @@ class _ProfileViewState extends State<ProfileView> {
 
     setState(() => _isLoading = true);
 
-    // TODO: Implement update profile API
-    // For now, just show success message
-    await Future.delayed(const Duration(seconds: 1));
-    
-    setState(() {
-      _isLoading = false;
-      _isEditing = false;
-    });
+    try {
+      final authController = context.read<AuthController>();
+      final user = authController.currentUser;
+      
+      if (user == null) {
+        throw Exception('User tidak ditemukan');
+      }
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profil berhasil diperbarui'),
-          backgroundColor: AppTheme.successColor,
-        ),
+      // Call update profile API
+      final updatedUser = await AuthService.updateProfile(
+        userId: user.id.toString(),
+        nama: _namaController.text,
+        noTelepon: _noTeleponController.text,
       );
+
+      // Update auth controller dengan user baru
+      await authController.refreshUser();
+      
+      setState(() {
+        _isLoading = false;
+        _isEditing = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profil berhasil diperbarui'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memperbarui profil: ${e.toString()}'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
     }
   }
 

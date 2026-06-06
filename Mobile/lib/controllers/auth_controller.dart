@@ -81,6 +81,17 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
   }
   
+  // Refresh User Data
+  Future<void> refreshUser() async {
+    try {
+      _currentUser = AuthService.getCurrentUser();
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+    }
+  }
+  
   // Get Admin User (for chat)
   Future<Map<String, dynamic>?> getAdminUser() async {
     try {
