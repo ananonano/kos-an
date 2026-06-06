@@ -95,21 +95,33 @@ class AuthService {
       if (noTelepon != null) body['no_telepon'] = noTelepon;
       if (foto != null) body['foto'] = foto;
       
+      print('🔄 [AuthService] Updating profile...');
+      print('📝 [AuthService] User ID: $userId');
+      print('📝 [AuthService] Body: $body');
+      
       final response = await HttpService.put(
         '${AppConfig.authEndpoint}/profile', // Backend endpoint: PUT /api/auth/profile
         body: body,
       );
+      
+      print('📦 [AuthService] Response: $response');
       
       // Backend response format: { "success": true, "message": "...", "data": {...} }
       if (response['success'] != true) {
         throw Exception(response['message'] ?? 'Update profile gagal');
       }
       
+      print('✅ [AuthService] Update successful, saving to storage...');
+      
       final user = UserModel.fromJson(response['data']);
       await StorageService.saveObject(AppConstants.userKey, user.toJson());
       
+      print('✅ [AuthService] User saved to storage');
+      print('📦 [AuthService] Saved user: ${user.nama}, ${user.noTelepon}');
+      
       return user;
     } catch (e) {
+      print('❌ [AuthService] Update profile error: $e');
       throw Exception('Update profile gagal: ${e.toString()}');
     }
   }

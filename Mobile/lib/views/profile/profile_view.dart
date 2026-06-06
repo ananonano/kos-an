@@ -54,6 +54,13 @@ class _ProfileViewState extends State<ProfileView> {
         throw Exception('User tidak ditemukan');
       }
 
+      print('🔄 [Profile] Updating profile...');
+      print('📝 [Profile] User ID: ${user.id}');
+      print('📝 [Profile] Old Nama: ${user.nama}');
+      print('📝 [Profile] New Nama: ${_namaController.text}');
+      print('📝 [Profile] Old NoTelepon: ${user.noTelepon}');
+      print('📝 [Profile] New NoTelepon: ${_noTeleponController.text}');
+
       // Call update profile API
       final updatedUser = await AuthService.updateProfile(
         userId: user.id.toString(),
@@ -61,8 +68,16 @@ class _ProfileViewState extends State<ProfileView> {
         noTelepon: _noTeleponController.text,
       );
 
+      print('✅ [Profile] Profile updated successfully');
+      print('📦 [Profile] Updated user: ${updatedUser.nama}, ${updatedUser.noTelepon}');
+
       // Update auth controller dengan user baru
       await authController.refreshUser();
+      
+      // Reload user data to UI
+      _loadUserData();
+      
+      print('🔄 [Profile] UI refreshed');
       
       setState(() {
         _isLoading = false;
@@ -78,6 +93,8 @@ class _ProfileViewState extends State<ProfileView> {
         );
       }
     } catch (e) {
+      print('❌ [Profile] Update failed: $e');
+      
       setState(() {
         _isLoading = false;
       });
