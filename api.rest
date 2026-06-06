@@ -1,0 +1,378 @@
+### ========================================
+### API TESTING - KOSAN TERPADU BACKEND
+### Backend URL: https://kosan-backend-670153358279.asia-southeast2.run.app
+### Total: 43 Endpoints
+### 
+### CARA PAKAI:
+### 1. Jalanin endpoint #4 (Login) dulu
+### 2. Copy token dari response
+### 3. Ganti @token di bawah dengan token yang kamu copy
+### 4. Atau bisa langsung ganti semua {{token}} dengan token kamu
+### ========================================
+
+@baseUrl = https://kosan-backend-670153358279.asia-southeast2.run.app
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTcsImVtYWlsIjoiYWRtaW5Aa29zdGVycGFkdS5jb20iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3ODA1OTk2NTYsImV4cCI6MTc4MTIwNDQ1Nn0.gN9UYzqUdcecFGffKHMDm4TWOlNrDEp4To1zeOLAJUU
+
+### 1. Testing Root URL (Health Check)
+GET {{baseUrl}}/health HTTP/1.1
+
+### 2. Register Admin
+POST {{baseUrl}}/api/auth/register HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "admin@kosterpadu.com",
+  "password": "Admin123!",
+  "nama": "Admin Kos Terpadu",
+  "role": "admin",
+  "no_telepon": "081234567890"
+}
+
+### 3. Register Tenant
+POST {{baseUrl}}/api/auth/register HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "tenant@kosterpadu.com",
+  "password": "Tenant123!",
+  "nama": "Budi Santoso",
+  "role": "tenant",
+  "no_telepon": "082234567890"
+}
+
+### 4. Login (Ambil Token JWT) - JALANIN INI DULU!
+POST {{baseUrl}}/api/auth/login HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "admin@kosterpadu.com",
+  "password": "Admin123!"
+}
+
+### 5. Get Profile (Ganti @token dulu di baris 10!)
+GET {{baseUrl}}/api/auth/me HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 6. Update Profile
+PUT https://kosan-backend-670153358279.asia-southeast2.run.app/api/auth/profile HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "nama": "Admin Updated",
+  "no_telepon": "081234567899"
+}
+
+### 7. Change Password
+PUT https://kosan-backend-670153358279.asia-southeast2.run.app/api/auth/change-password HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "old_password": "Admin123!",
+  "new_password": "NewPassword123!"
+}
+
+###
+### ========================================
+### KAMAR ENDPOINTS (6 endpoints)
+### ========================================
+
+### 8. GET All Rooms
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/rooms HTTP/1.1
+
+### 9. GET Rooms (Filter Status Kosong)
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/rooms?status=kosong HTTP/1.1
+
+### 10. GET Room by ID
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/rooms/1 HTTP/1.1
+
+### 11. POST Create Room
+POST https://kosan-backend-670153358279.asia-southeast2.run.app/api/rooms HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "nomor_kamar": "A101",
+  "tipe": "Standard",
+  "harga": 1500000,
+  "status": "kosong",
+  "deskripsi": "Kamar nyaman dengan fasilitas lengkap",
+  "fasilitas": ["AC", "Kasur", "Lemari", "Wifi"]
+}
+
+### 12. PUT Update Room
+PUT https://kosan-backend-670153358279.asia-southeast2.run.app/api/rooms/1 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "harga": 1600000,
+  "status": "terisi"
+}
+
+### 13. DELETE Room
+DELETE https://kosan-backend-670153358279.asia-southeast2.run.app/api/rooms/1 HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 14. GET Room Statistics
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/rooms/statistics HTTP/1.1
+Authorization: Bearer {{token}}
+
+###
+### ========================================
+### TENANTS ENDPOINTS (5 endpoints)
+### ========================================
+
+### 15. GET All Tenants
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/tenants HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 16. GET Tenant by ID
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/tenants/1 HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 17. GET Tenant by User ID
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/tenants/by-user/2 HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 18. POST Create Tenant
+POST https://kosan-backend-670153358279.asia-southeast2.run.app/api/tenants HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "user_id": 2,
+  "kamar_id": 1,
+  "nama": "Budi Santoso",
+  "email": "budi@email.com",
+  "no_telepon": "082345678901",
+  "alamat_asal": "Jakarta",
+  "pekerjaan": "Mahasiswa",
+  "kontak_darurat": "081234567890",
+  "tanggal_masuk": "2026-06-01"
+}
+
+### 19. PUT Update Tenant
+PUT https://kosan-backend-670153358279.asia-southeast2.run.app/api/tenants/1 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "no_telepon": "082345678999",
+  "status": "aktif"
+}
+
+### 20. GET Tenant Statistics
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/tenants/statistics HTTP/1.1
+Authorization: Bearer {{token}}
+
+###
+### ========================================
+### BILLS ENDPOINTS (7 endpoints)
+### ========================================
+
+### 21. GET All Bills
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/bills HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 22. GET Bill by ID
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/bills/1 HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 23. POST Create Bill
+POST https://kosan-backend-670153358279.asia-southeast2.run.app/api/bills HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "tenant_id": 1,
+  "contract_id": 1,
+  "bulan": 6,
+  "tahun": 2026,
+  "jumlah": 1500000,
+  "jatuh_tempo": "2026-06-10"
+}
+
+### 24. PUT Update Bill
+PUT https://kosan-backend-670153358279.asia-southeast2.run.app/api/bills/1 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "lunas"
+}
+
+### 25. POST Generate Monthly Bills
+POST https://kosan-backend-670153358279.asia-southeast2.run.app/api/bills/generate-monthly HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "bulan": 6,
+  "tahun": 2026
+}
+
+### 26. POST Update Overdue Bills
+POST https://kosan-backend-670153358279.asia-southeast2.run.app/api/bills/update-overdue HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 27. GET Bill Statistics
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/bills/statistics HTTP/1.1
+Authorization: Bearer {{token}}
+
+###
+### ========================================
+### PAYMENTS ENDPOINTS (7 endpoints)
+### ========================================
+
+### 28. GET All Payments
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/payments HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 29. GET Pending Payments
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/payments/pending HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 30. GET Payment by ID
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/payments/1 HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 31. POST Create Payment
+POST https://kosan-backend-670153358279.asia-southeast2.run.app/api/payments HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "bill_id": 1,
+  "tenant_id": 1,
+  "jumlah": 1500000,
+  "metode_pembayaran": "transfer",
+  "bukti_pembayaran": "https://firebase.url/bukti.jpg"
+}
+
+### 32. PUT Update Payment
+PUT https://kosan-backend-670153358279.asia-southeast2.run.app/api/payments/1 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "lunas"
+}
+
+### 33. POST Verify Payment
+POST https://kosan-backend-670153358279.asia-southeast2.run.app/api/payments/1/verify HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 34. POST Reject Payment
+POST https://kosan-backend-670153358279.asia-southeast2.run.app/api/payments/1/reject HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 35. GET Payment Statistics
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/payments/statistics HTTP/1.1
+Authorization: Bearer {{token}}
+
+###
+### ========================================
+### MAINTENANCE ENDPOINTS (6 endpoints)
+### ========================================
+
+### 36. GET All Maintenance
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/maintenance HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 37. GET Maintenance by ID
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/maintenance/1 HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 38. POST Create Maintenance
+POST https://kosan-backend-670153358279.asia-southeast2.run.app/api/maintenance HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "tenant_id": 1,
+  "kamar_id": 1,
+  "judul": "AC Rusak",
+  "deskripsi": "AC tidak dingin",
+  "kategori": "AC",
+  "prioritas": "tinggi"
+}
+
+### 39. PUT Update Maintenance Status
+PUT https://kosan-backend-670153358279.asia-southeast2.run.app/api/maintenance/1/status HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "selesai",
+  "komentar_admin": "Sudah diperbaiki"
+}
+
+### 40. GET Urgent Maintenance
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/maintenance/urgent HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 41. GET Maintenance Statistics
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/maintenance/statistics HTTP/1.1
+Authorization: Bearer {{token}}
+
+###
+### ========================================
+### ANNOUNCEMENTS ENDPOINTS (4 endpoints)
+### ========================================
+
+### 42. GET All Announcements
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/announcements HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 43. GET Active Announcements by Target
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/announcements/active/tenant HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 44. POST Create Announcement
+POST https://kosan-backend-670153358279.asia-southeast2.run.app/api/announcements HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "judul": "Pemadaman Listrik",
+  "konten": "Besok ada pemadaman jam 08.00-12.00",
+  "kategori": "umum",
+  "prioritas": "penting",
+  "target": "semua"
+}
+
+### 45. PUT Update Announcement
+PUT https://kosan-backend-670153358279.asia-southeast2.run.app/api/announcements/1 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "is_active": false
+}
+
+###
+### ========================================
+### NOTIFICATIONS & DASHBOARD (3 endpoints)
+### ========================================
+
+### 46. GET All Notifications
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/notifications HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 47. POST Mark Notification as Read
+POST https://kosan-backend-670153358279.asia-southeast2.run.app/api/notifications/1/mark-read HTTP/1.1
+Authorization: Bearer {{token}}
+
+### 48. GET Dashboard Admin
+GET https://kosan-backend-670153358279.asia-southeast2.run.app/api/dashboard/admin HTTP/1.1
+Authorization: Bearer {{token}}
+
+###
+### ========================================
+### CATATAN:
+### - Ganti {{token}} dengan token dari response login
+### - Ganti ID di URL sesuai data di database
+### - Total 48 endpoints (lebih dari 43 yang dibutuhkan)
+### ========================================

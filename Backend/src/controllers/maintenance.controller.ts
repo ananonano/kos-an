@@ -126,6 +126,43 @@ export class MaintenanceController {
         foto
       });
 
+      // 🔔 Create notification for all ADMIN users
+      const { pool } = await import('../config/database');
+      
+      // Get tenant name and room number
+      const tenantResult = await pool.query(
+        `SELECT t.nama, r.nomor_kamar 
+         FROM tenants t 
+         LEFT JOIN rooms r ON t.kamar_id = r.id 
+         WHERE t.id = $1`,
+        [tenant_id]
+      );
+
+      // Get all admin users
+      const adminResult = await pool.query(
+        "SELECT id FROM users WHERE role = 'admin'"
+      );
+
+      if (tenantResult.rows.length > 0 && adminResult.rows.length > 0) {
+        const tenantName = tenantResult.rows[0].nama;
+        const nomorKamar = tenantResult.rows[0].nomor_kamar || 'N/A';
+        
+        const priorityLabel = prioritas === 'urgent' ? '🚨 URGENT' : prioritas === 'tinggi' ? 'Tinggi' : prioritas === 'sedang' ? 'Sedang' : 'Rendah';
+
+        // Create notification for each admin
+        for (const admin of adminResult.rows) {
+          await NotificationModel.create({
+            user_id: admin.id,
+            title: `Keluhan Baru: ${judul}`,
+            message: `${tenantName} (Kamar ${nomorKamar}) melaporkan keluhan ${kategori}. Prioritas: ${priorityLabel}`,
+            type: 'maintenance',
+            related_id: maintenance.id
+          });
+        }
+
+        console.log(`🔔 Created maintenance notifications for ${adminResult.rows.length} admin(s): ${judul}`);
+      }
+
       return res.status(201).json({
         success: true,
         message: 'Laporan maintenance berhasil dibuat',

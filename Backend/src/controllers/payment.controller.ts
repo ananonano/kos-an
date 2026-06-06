@@ -124,6 +124,49 @@ export class PaymentController {
         keterangan
       });
 
+      // 🔔 Create notification for all ADMIN users
+      const { NotificationModel } = await import('../models');
+      const { pool } = await import('../config/database');
+      
+      // Get tenant name and bill details
+      const detailResult = await pool.query(
+        `SELECT t.nama, b.bulan, b.tahun, r.nomor_kamar
+         FROM tenants t
+         LEFT JOIN bills b ON b.id = $1
+         LEFT JOIN rooms r ON t.kamar_id = r.id
+         WHERE t.id = $2`,
+        [bill_id, tenant_id]
+      );
+
+      // Get all admin users
+      const adminResult = await pool.query(
+        "SELECT id FROM users WHERE role = 'admin'"
+      );
+
+      if (detailResult.rows.length > 0 && adminResult.rows.length > 0) {
+        const tenantName = detailResult.rows[0].nama;
+        const periode = `${detailResult.rows[0].bulan} ${detailResult.rows[0].tahun}`;
+        const nomorKamar = detailResult.rows[0].nomor_kamar || 'N/A';
+        const formattedAmount = new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+          minimumFractionDigits: 0
+        }).format(parseFloat(jumlah));
+
+        // Create notification for each admin
+        for (const admin of adminResult.rows) {
+          await NotificationModel.create({
+            user_id: admin.id,
+            title: `Pembayaran Baru: ${periode}`,
+            message: `${tenantName} (Kamar ${nomorKamar}) telah melakukan pembayaran sebesar ${formattedAmount} via ${metode_pembayaran}. Menunggu verifikasi.`,
+            type: 'payment',
+            related_id: payment.id
+          });
+        }
+
+        console.log(`🔔 Created payment notifications for ${adminResult.rows.length} admin(s): ${formattedAmount}`);
+      }
+
       return res.status(201).json({
         success: true,
         message: 'Pembayaran berhasil disubmit, menunggu verifikasi',
