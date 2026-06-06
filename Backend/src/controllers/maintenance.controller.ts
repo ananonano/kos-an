@@ -147,7 +147,7 @@ export class MaintenanceController {
         const tenantName = tenantResult.rows[0].nama;
         const nomorKamar = tenantResult.rows[0].nomor_kamar || 'N/A';
         
-        const priorityLabel = prioritas === 'urgent' ? '🚨 URGENT' : prioritas === 'tinggi' ? 'Tinggi' : prioritas === 'sedang' ? 'Sedang' : 'Rendah';
+        const priorityLabel = prioritas === 'urgent' ? '[URGENT]' : prioritas === 'tinggi' ? 'Tinggi' : prioritas === 'sedang' ? 'Sedang' : 'Rendah';
 
         // Create notification for each admin
         for (const admin of adminResult.rows) {
