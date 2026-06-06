@@ -8,7 +8,6 @@ import { cn, timeAgo } from "@/lib/utils";
 import { useNotificationStore } from "@/store/notification.store";
 import type { Notification, NotificationType } from "@/types";
 import api from "@/lib/axios";
-import { useToast } from "@/hooks/use-toast";
 
 const typeIconMap: Record<NotificationType, any> = {
   payment: CreditCard,
@@ -29,7 +28,6 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { setNotifications: setStore, markAllAsRead } = useNotificationStore();
-  const { toast } = useToast();
 
   // Fetch notifications from backend
   useEffect(() => {
@@ -60,11 +58,6 @@ export default function NotificationsPage() {
       }
     } catch (error: any) {
       console.error('❌ Error fetching notifications:', error);
-      toast({
-        title: "Error",
-        description: "Gagal memuat notifikasi",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
@@ -99,20 +92,10 @@ export default function NotificationsPage() {
       console.log('✅ Marked all notifications as read');
       
       markAllAsRead();
-      
-      toast({
-        title: "Berhasil",
-        description: "Semua notifikasi telah ditandai dibaca",
-      });
     } catch (error: any) {
       console.error('❌ Error marking all as read:', error);
       // Revert optimistic update on error
       fetchNotifications();
-      toast({
-        title: "Error",
-        description: "Gagal menandai semua notifikasi",
-        variant: "destructive",
-      });
     }
   };
 
@@ -132,11 +115,6 @@ export default function NotificationsPage() {
       console.error('❌ Error deleting notification:', error);
       // Revert optimistic update on error
       fetchNotifications();
-      toast({
-        title: "Error",
-        description: "Gagal menghapus notifikasi",
-        variant: "destructive",
-      });
     }
   };
 
