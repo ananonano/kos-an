@@ -68,8 +68,8 @@ export default function NotificationsPage() {
       // Optimistic update
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
       
-      // Call backend API
-      await api.put(`/notifications/${id}/read`);
+      // Call backend API - POST method, /mark-read endpoint
+      await api.post(`/notifications/${id}/mark-read`);
       console.log(`✅ Marked notification ${id} as read`);
       
       // Update store
@@ -87,8 +87,8 @@ export default function NotificationsPage() {
       // Optimistic update
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       
-      // Call backend API
-      await api.put('/notifications/mark-all-read');
+      // Call backend API - POST method
+      await api.post('/notifications/mark-all-read');
       console.log('✅ Marked all notifications as read');
       
       markAllAsRead();
