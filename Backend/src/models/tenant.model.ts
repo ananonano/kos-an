@@ -84,6 +84,8 @@ export class TenantModel {
 
     // Find tenant by user_id
     static async findByUserId(userId: number): Promise<Tenant | null> {
+        console.log('🔍 [TenantModel] findByUserId called with userId:', userId);
+        
         const query = `
       SELECT t.*, r.nomor_kamar
       FROM tenants t
@@ -91,6 +93,14 @@ export class TenantModel {
       WHERE t.user_id = $1
     `;
         const result = await pool.query(query, [userId]);
+        
+        console.log('🔍 [TenantModel] Query result:', result.rows.length > 0 ? {
+            id: result.rows[0].id,
+            user_id: result.rows[0].user_id,
+            nama: result.rows[0].nama,
+            email: result.rows[0].email
+        } : 'No tenant found');
+        
         return result.rows[0] || null;
     }
 

@@ -295,7 +295,17 @@ export class TenantController {
     try {
       const { userId } = req.params;
 
+      console.log('🔍 [TenantController] getByUserId called with userId:', userId);
+
       const tenant = await TenantModel.findByUserId(parseInt(userId));
+      
+      console.log('🔍 [TenantController] Tenant found:', tenant ? {
+        id: tenant.id,
+        user_id: tenant.user_id,
+        nama: tenant.nama,
+        email: tenant.email
+      } : 'null');
+      
       if (!tenant) {
         return res.status(404).json({
           success: false,

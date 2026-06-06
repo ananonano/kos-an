@@ -98,8 +98,12 @@ class _CreatePaymentViewState extends State<CreatePaymentView> {
       return;
     }
     
+    print('🔍 [CreatePayment] Current User: ${user.email}, User ID: ${user.id}, User Name: ${user.nama}');
+    
     // Get tenant data by user_id
     final tenant = await TenantService.getTenantByUserId(user.id.toString());
+    
+    print('🔍 [CreatePayment] Tenant fetched: ${tenant?.nama}, Tenant ID: ${tenant?.id}, Tenant User ID: ${tenant?.userId}');
     
     if (tenant == null) {
       if (mounted) {
@@ -110,6 +114,38 @@ class _CreatePaymentViewState extends State<CreatePaymentView> {
           ),
         );
       }
+      return;
+    }
+    
+    // Show confirmation dialog with tenant info
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Pembayaran'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Nama: ${tenant.nama}'),
+            Text('Email: ${tenant.email}'),
+            const SizedBox(height: 8),
+            const Text('Apakah data sudah benar?'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Ya, Lanjutkan'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirmed != true) {
       return;
     }
     
